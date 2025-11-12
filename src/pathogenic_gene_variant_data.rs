@@ -1,3 +1,5 @@
+use crate::error::PivotError;
+
 /// This enum carries the gene-variant configurations that we allow in our data
 /// as a causative Genomic Interpretation for a disease.
 ///
@@ -42,7 +44,7 @@ impl<'a> PathogenicGeneVariantData<'a> {
     pub fn from_genes_and_hgvs(
         genes: Vec<&'a str>,
         hgvs_strings: Vec<&'a str>,
-    ) -> Result<PathogenicGeneVariantData<'a>, String> {
+    ) -> Result<PathogenicGeneVariantData<'a>, PivotError> {
         match (genes.len(), hgvs_strings.len()) {
             (0, 0) => Ok(PathogenicGeneVariantData::None),
             (1, 0) => Ok(PathogenicGeneVariantData::CausativeGene(genes[0])),
@@ -64,11 +66,11 @@ impl<'a> PathogenicGeneVariantData<'a> {
                     })
                 }
             }
-            _ => Err(format!(
+            _ => Err(PivotError::InvalidGeneVariantConfiguration(format!(
                 "Invalid quantity of genes {} and HGVS variants {}. Could not interpret as PathogenicGeneVariantData.",
                 genes.len(),
                 hgvs_strings.len()
-            )),
+            ))),
         }
     }
 
