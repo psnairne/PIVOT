@@ -8,3 +8,6 @@ name = "pivot"
 version = "0.1.0"
 
 [dependencies]
+ga4ghphetools = { git = 'https://github.com/P2GX/ga4ghphetools.git', tag = '0.4.134' }
+phenopackets = { version = "0.2.2-post1", features = ["serde"] }
+rstest = "0.26.1"
