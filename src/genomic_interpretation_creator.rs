@@ -11,6 +11,10 @@ pub struct GenomicInterpretationCreator {
 }
 
 impl GenomicInterpretationCreator {
+    pub fn new(hgnc_client: HgncClient) -> GenomicInterpretationCreator {
+        GenomicInterpretationCreator { hgnc_client }
+    }
+
     /// Takes the PathogenicGeneVariantData enum and outputs the appropriate GenomicInterpretation Phenopacket element.
     ///
     /// PathogenicGeneVariantData --> vec![]
