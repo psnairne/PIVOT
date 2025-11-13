@@ -48,21 +48,21 @@ impl HgvsVariant {
         self.chr.contains("X")
     }
 
-pub fn validate_against_gene(&self, gene: &str) -> Result<(), PivotError> {
-    let (expected, id_type) = if is_hgnc_id(gene) {
-        (self.hgnc_id.as_str(), "HGNC ID")
-    } else {
-        (self.symbol.as_str(), "gene symbol")
-    };
+    pub fn validate_against_gene(&self, gene: &str) -> Result<(), PivotError> {
+        let (expected, id_type) = if is_hgnc_id(gene) {
+            (self.hgnc_id.as_str(), "HGNC ID")
+        } else {
+            (self.symbol.as_str(), "gene symbol")
+        };
 
-    if gene == expected {
-        Ok(())
-    } else {
-        Err(PivotError::IncorrectGeneData(format!(
-            "Provided {id_type} {gene} does not match with HGVS variant {self:?}"
-        )))
+        if gene == expected {
+            Ok(())
+        } else {
+            Err(PivotError::IncorrectGeneData(format!(
+                "Provided {id_type} {gene} does not match with HGVS variant {self:?}"
+            )))
+        }
     }
-}
 
     pub fn get_hgvs_variant_interpretation(&self, allele_count: usize) -> VariantInterpretation {
         let gene_ctxt = GeneDescriptor {
