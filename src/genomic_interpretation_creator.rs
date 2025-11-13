@@ -1,8 +1,8 @@
+use phenopackets::ga4gh::vrsatile::v1::GeneDescriptor;
 use crate::error::PivotError;
 use crate::hgnc_client::HgncClient;
 use crate::hgvs_variant::HgvsVariant;
 use crate::pathogenic_gene_variant_data::PathogenicGeneVariantData;
-use phenopackets::ga4gh::vrsatile::v1::GeneDescriptor;
 use phenopackets::schema::v2::core::GenomicInterpretation;
 use phenopackets::schema::v2::core::genomic_interpretation::Call;
 

@@ -1,6 +1,6 @@
 use phenopackets::schema::v2::core::OntologyClass;
 
-pub fn get_allele_term(allele_count: usize, is_x: bool) -> OntologyClass {
+pub(crate) fn get_allele_term(allele_count: usize, is_x: bool) -> OntologyClass {
     if allele_count == 2 {
         OntologyClass {
             id: "GENO:0000136".to_string(),
@@ -19,7 +19,7 @@ pub fn get_allele_term(allele_count: usize, is_x: bool) -> OntologyClass {
     }
 }
 
-pub fn is_hgnc_id(gene: &str) -> bool {
+pub(crate) fn is_hgnc_id(gene: &str) -> bool {
     let split_string = gene.split(':').collect::<Vec<&str>>();
     split_string.first() == Some(&"HGNC")
 }
