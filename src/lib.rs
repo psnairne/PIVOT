@@ -1,3 +1,6 @@
-pub fn add(a: i32, b: i32) -> i32 {
-    a + b
-}
+mod error;
+pub mod genomic_interpretation_creator;
+mod hgnc_client;
+mod hgvs_variant;
+pub mod pathogenic_gene_variant_data;
+mod utils;
