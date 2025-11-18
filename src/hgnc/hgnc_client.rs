@@ -87,15 +87,18 @@ impl HGNCData for HGNCClient {
         }
     }
 
-    fn request_gene_identifier_pair(&self, query: GeneQuery) -> Result<(String, String), HGNCError> {
-        let doc  = self.request_gene_data(query.clone())?;
+    fn request_gene_identifier_pair(
+        &self,
+        query: GeneQuery,
+    ) -> Result<(String, String), HGNCError> {
+        let doc = self.request_gene_data(query.clone())?;
 
-        if let Some(symbol) = doc.symbol && let Some(hgnc_id) = doc.hgnc_id {
+        if let Some(symbol) = doc.symbol
+            && let Some(hgnc_id) = doc.hgnc_id
+        {
             return Ok((hgnc_id, symbol));
-
         }
         Err(HGNCError::NoDocumentFound(query.inner().to_string()))
-
     }
 }
 
@@ -144,7 +147,6 @@ mod tests {
         assert_eq!(gene_doc.symbol.as_deref(), expected_symbol);
     }
 
-
     #[rstest]
     #[case(GeneQuery::Symbol("ZNF3"), ("HGNC:13089", "ZNF3"))]
     #[case(GeneQuery::HgncId("HGNC:13089"), ("HGNC:13089", "ZNF3"))]
@@ -179,7 +181,4 @@ mod tests {
 
         assert_eq!(gene_symbol.as_str(), "CLOCK");
     }
-
-
-
 }

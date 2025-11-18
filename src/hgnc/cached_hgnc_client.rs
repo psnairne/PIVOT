@@ -98,11 +98,15 @@ impl HGNCData for CachedHGNCClient {
         }
     }
 
-    fn request_gene_identifier_pair(&self, query: GeneQuery) -> Result<(String, String), HGNCError> {
+    fn request_gene_identifier_pair(
+        &self,
+        query: GeneQuery,
+    ) -> Result<(String, String), HGNCError> {
         let doc = self.request_gene_data(query.clone())?;
 
-
-        if let Some(symbol) = doc.symbol && let Some(hgnc_id) = doc.hgnc_id {
+        if let Some(symbol) = doc.symbol
+            && let Some(hgnc_id) = doc.hgnc_id
+        {
             return Ok((hgnc_id, symbol));
         }
         Err(HGNCError::NoDocumentFound(query.inner().to_string()))
@@ -218,11 +222,13 @@ mod tests {
     fn test_cache(temp_dir: TempDir) {
         let symbol = "CLOCK";
         let cache_file_path = temp_dir.path().join("cache.hgnc");
-        let client = CachedHGNCClient::new(cache_file_path.clone(), "https://rest.genenames.org/".to_string()).unwrap();
+        let client = CachedHGNCClient::new(
+            cache_file_path.clone(),
+            "https://rest.genenames.org/".to_string(),
+        )
+        .unwrap();
 
-        let _ = client
-            .request_gene_data(GeneQuery::Symbol(symbol))
-            .unwrap();
+        let _ = client.request_gene_data(GeneQuery::Symbol(symbol)).unwrap();
 
         let cache = RedbDatabase::create(&client.cache_file_path).unwrap();
         let cache_reader = cache.begin_read().unwrap();
@@ -241,11 +247,15 @@ mod tests {
     #[case(GeneQuery::HgncId("HGNC:13089"), ("HGNC:13089", "ZNF3"))]
     fn test_request_gene_identifier_pair(
         #[case] query: GeneQuery,
-        #[case] expected_pair: (&str, &str)
+        #[case] expected_pair: (&str, &str),
     ) {
         let temp_dir = tempfile::tempdir().expect("Failed to create temporary directory");
         let cache_file_path = temp_dir.path().join("cache.hgnc");
-        let client = CachedHGNCClient::new(cache_file_path.clone(), "https://rest.genenames.org/".to_string()).unwrap();
+        let client = CachedHGNCClient::new(
+            cache_file_path.clone(),
+            "https://rest.genenames.org/".to_string(),
+        )
+        .unwrap();
         let client = client
             .with_cache_dir(temp_dir.path().to_path_buf().join("test_cache"))
             .unwrap();
