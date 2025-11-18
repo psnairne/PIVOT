@@ -67,12 +67,11 @@ impl<'a> PathogenicGeneVariantData<'a> {
                 }
             }
             _ => Err(PivotError::InvalidGeneVariantConfiguration {
-                n_genes: genes.len(),
-                n_variants: hgvs_strings.len(),
+                n_genes: genes.len() ,
+                n_variants: hgvs_strings.len() ,
             }),
         }
     }
-
 
     pub fn get_allelic_count(&self) -> usize {
         match self {

@@ -73,8 +73,8 @@ impl HGNCData for HGNCClient {
     fn request_hgnc_id(&self, symbol: &str) -> Result<String, HGNCError> {
         let doc = self.request_gene_data(&GeneQuery::Symbol(symbol))?;
         match doc.hgnc_id {
-            None => {Err(HGNCError::NoDocumentFound(symbol.to_string()))}
-            Some(hg_id) => {Ok(hg_id)}
+            None => Err(HGNCError::NoDocumentFound(symbol.to_string())),
+            Some(hg_id) => Ok(hg_id),
         }
     }
 
@@ -82,10 +82,9 @@ impl HGNCData for HGNCClient {
         let doc = self.request_gene_data(&GeneQuery::HgncId(hgnc_id))?;
 
         match doc.symbol {
-            None => {Err(HGNCError::NoDocumentFound(hgnc_id.to_string()))}
-            Some(symbol) => {Ok(symbol)}
+            None => Err(HGNCError::NoDocumentFound(hgnc_id.to_string())),
+            Some(symbol) => Ok(symbol),
         }
-
     }
 }
 
@@ -113,12 +112,10 @@ impl Debug for HGNCClient {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::{ rstest};
+    use rstest::rstest;
 
     #[rstest]
     #[case(GeneQuery::Symbol("ZNF3"), Some("HGNC:13089"), Some("ZNF3"))]

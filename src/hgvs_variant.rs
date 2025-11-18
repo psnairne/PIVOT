@@ -58,7 +58,11 @@ impl HgvsVariant {
         if gene == expected {
             Ok(())
         } else {
-            Err(PivotError::IncorrectGeneData{id_type: id_type.to_string(), gene:gene.to_string(), variant: self.clone()})
+            Err(PivotError::IncorrectGeneData {
+                id_type: id_type.to_string(),
+                gene: gene.to_string(),
+                hgnc_id: self.hgnc_id.to_string(),
+            })
         }
     }
 

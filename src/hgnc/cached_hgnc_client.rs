@@ -199,7 +199,6 @@ mod tests {
     use rstest::{fixture, rstest};
     use tempfile::TempDir;
 
-
     #[fixture]
     fn temp_dir() -> TempDir {
         tempfile::tempdir().expect("Failed to create temporary directory")
@@ -209,9 +208,13 @@ mod tests {
     fn test_cache(temp_dir: TempDir) {
         let symbol = "CLOCK";
         let client = CachedHGNCClient::default();
-        let client  =client.with_cache_dir(temp_dir.path().to_path_buf().join("test_cache")).unwrap();
+        let client = client
+            .with_cache_dir(temp_dir.path().to_path_buf().join("test_cache"))
+            .unwrap();
 
-        let _ = client.request_gene_data(&GeneQuery::Symbol(symbol)).unwrap();
+        let _ = client
+            .request_gene_data(&GeneQuery::Symbol(symbol))
+            .unwrap();
 
         let cache = RedbDatabase::create(&client.cache_file_path).unwrap();
         let cache_reader = cache.begin_read().unwrap();
@@ -220,12 +223,8 @@ mod tests {
         if let Ok(Some(cache_entry)) = table.get(symbol) {
             let value = cache_entry.value();
 
-            assert_eq!(
-                value.hgnc_id.unwrap(),
-                "HGNC:2082"
-            );
+            assert_eq!(value.hgnc_id.unwrap(), "HGNC:2082");
             assert_eq!(value.symbol.unwrap(), symbol);
         }
-
     }
 }
