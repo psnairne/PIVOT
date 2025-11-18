@@ -66,13 +66,13 @@ impl<'a> PathogenicGeneVariantData<'a> {
                     })
                 }
             }
-            _ => Err(PivotError::InvalidGeneVariantConfiguration(format!(
-                "Invalid quantity of genes {} and HGVS variants {}. Could not interpret as PathogenicGeneVariantData.",
-                genes.len(),
-                hgvs_strings.len()
-            ))),
+            _ => Err(PivotError::InvalidGeneVariantConfiguration {
+                n_genes: genes.len(),
+                n_variants: hgvs_strings.len(),
+            }),
         }
     }
+
 
     pub fn get_allelic_count(&self) -> usize {
         match self {
