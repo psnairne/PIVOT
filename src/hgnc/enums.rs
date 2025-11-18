@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub enum GeneQuery<'a> {
     Symbol(&'a str),
     HgncId(&'a str),

@@ -46,7 +46,7 @@ impl HGNCClient {
 }
 
 impl HGNCData for HGNCClient {
-    fn request_gene_data(&self, query: &GeneQuery) -> Result<GeneDoc, HGNCError> {
+    fn request_gene_data(&self, query: GeneQuery) -> Result<GeneDoc, HGNCError> {
         let fetch_url = match &query {
             GeneQuery::Symbol(symbol) => format!("{}fetch/symbol/{}", self.api_url, symbol),
             GeneQuery::HgncId(id) => format!("{}fetch/hgnc_id/{}", self.api_url, id),
@@ -71,7 +71,7 @@ impl HGNCData for HGNCClient {
     }
 
     fn request_hgnc_id(&self, symbol: &str) -> Result<String, HGNCError> {
-        let doc = self.request_gene_data(&GeneQuery::Symbol(symbol))?;
+        let doc = self.request_gene_data(GeneQuery::Symbol(symbol))?;
         match doc.hgnc_id {
             None => Err(HGNCError::NoDocumentFound(symbol.to_string())),
             Some(hg_id) => Ok(hg_id),
@@ -79,12 +79,23 @@ impl HGNCData for HGNCClient {
     }
 
     fn request_gene_symbol(&self, hgnc_id: &str) -> Result<String, HGNCError> {
-        let doc = self.request_gene_data(&GeneQuery::HgncId(hgnc_id))?;
+        let doc = self.request_gene_data(GeneQuery::HgncId(hgnc_id))?;
 
         match doc.symbol {
             None => Err(HGNCError::NoDocumentFound(hgnc_id.to_string())),
             Some(symbol) => Ok(symbol),
         }
+    }
+
+    fn request_gene_identifier_pair(&self, query: GeneQuery) -> Result<(String, String), HGNCError> {
+        let doc  = self.request_gene_data(query.clone())?;
+
+        if let Some(symbol) = doc.symbol && let Some(hgnc_id) = doc.hgnc_id {
+            return Ok((hgnc_id, symbol));
+
+        }
+        Err(HGNCError::NoDocumentFound(query.inner().to_string()))
+
     }
 }
 
@@ -127,10 +138,26 @@ mod tests {
     ) {
         let client = HGNCClient::default();
 
-        let gene_doc = client.request_gene_data(&query).unwrap();
+        let gene_doc = client.request_gene_data(query).unwrap();
 
         assert_eq!(gene_doc.hgnc_id.as_deref(), expected_hgnc_id);
         assert_eq!(gene_doc.symbol.as_deref(), expected_symbol);
+    }
+
+
+    #[rstest]
+    #[case(GeneQuery::Symbol("ZNF3"), ("HGNC:13089", "ZNF3"))]
+    #[case(GeneQuery::HgncId("HGNC:13089"), ("HGNC:13089", "ZNF3"))]
+    fn test_request_gene_identifier_pair(
+        #[case] query: GeneQuery,
+        #[case] expected_pair: (&str, &str),
+    ) {
+        let client = HGNCClient::default();
+
+        let gene_doc = client.request_gene_identifier_pair(query).unwrap();
+
+        assert_eq!(gene_doc.0, expected_pair.0);
+        assert_eq!(gene_doc.1, expected_pair.1);
     }
 
     #[rstest]
@@ -152,4 +179,7 @@ mod tests {
 
         assert_eq!(gene_symbol.as_str(), "CLOCK");
     }
+
+
+
 }

@@ -67,9 +67,9 @@ pub struct CachedHGNCClient {
 }
 
 impl HGNCData for CachedHGNCClient {
-    fn request_gene_data(&self, query: &GeneQuery) -> Result<GeneDoc, HGNCError> {
+    fn request_gene_data(&self, query: GeneQuery) -> Result<GeneDoc, HGNCError> {
         let cache = self.cache()?;
-        if let Some(gene_doc) = Self::find_cache_entry(query, &cache) {
+        if let Some(gene_doc) = Self::find_cache_entry(&query, &cache) {
             return Ok(gene_doc);
         }
 
@@ -79,7 +79,7 @@ impl HGNCData for CachedHGNCClient {
     }
 
     fn request_hgnc_id(&self, symbol: &str) -> Result<String, HGNCError> {
-        let doc = self.request_gene_data(&GeneQuery::Symbol(symbol))?;
+        let doc = self.request_gene_data(GeneQuery::Symbol(symbol))?;
 
         if let Some(hgnc_id) = &doc.hgnc_id {
             Ok(hgnc_id.clone())
@@ -89,13 +89,23 @@ impl HGNCData for CachedHGNCClient {
     }
 
     fn request_gene_symbol(&self, hgnc_id: &str) -> Result<String, HGNCError> {
-        let doc = self.request_gene_data(&GeneQuery::HgncId(hgnc_id))?;
+        let doc = self.request_gene_data(GeneQuery::HgncId(hgnc_id))?;
 
         if let Some(hgnc_id) = &doc.hgnc_id {
             Ok(hgnc_id.clone())
         } else {
             Err(HGNCError::NoDocumentFound(hgnc_id.to_string()))
         }
+    }
+
+    fn request_gene_identifier_pair(&self, query: GeneQuery) -> Result<(String, String), HGNCError> {
+        let doc = self.request_gene_data(query.clone())?;
+
+
+        if let Some(symbol) = doc.symbol && let Some(hgnc_id) = doc.hgnc_id {
+            return Ok((hgnc_id, symbol));
+        }
+        Err(HGNCError::NoDocumentFound(query.inner().to_string()))
     }
 }
 
@@ -207,13 +217,11 @@ mod tests {
     #[rstest]
     fn test_cache(temp_dir: TempDir) {
         let symbol = "CLOCK";
-        let client = CachedHGNCClient::default();
-        let client = client
-            .with_cache_dir(temp_dir.path().to_path_buf().join("test_cache"))
-            .unwrap();
+        let cache_file_path = temp_dir.path().join("cache.hgnc");
+        let client = CachedHGNCClient::new(cache_file_path.clone(), "https://rest.genenames.org/".to_string()).unwrap();
 
         let _ = client
-            .request_gene_data(&GeneQuery::Symbol(symbol))
+            .request_gene_data(GeneQuery::Symbol(symbol))
             .unwrap();
 
         let cache = RedbDatabase::create(&client.cache_file_path).unwrap();
@@ -226,5 +234,24 @@ mod tests {
             assert_eq!(value.hgnc_id.unwrap(), "HGNC:2082");
             assert_eq!(value.symbol.unwrap(), symbol);
         }
+    }
+
+    #[rstest]
+    #[case(GeneQuery::Symbol("ZNF3"), ("HGNC:13089", "ZNF3"))]
+    #[case(GeneQuery::HgncId("HGNC:13089"), ("HGNC:13089", "ZNF3"))]
+    fn test_request_gene_identifier_pair(
+        #[case] query: GeneQuery,
+        #[case] expected_pair: (&str, &str)
+    ) {
+        let temp_dir = tempfile::tempdir().expect("Failed to create temporary directory");
+        let cache_file_path = temp_dir.path().join("cache.hgnc");
+        let client = CachedHGNCClient::new(cache_file_path.clone(), "https://rest.genenames.org/".to_string()).unwrap();
+        let client = client
+            .with_cache_dir(temp_dir.path().to_path_buf().join("test_cache"))
+            .unwrap();
+        let gene_doc = client.request_gene_identifier_pair(query).unwrap();
+
+        assert_eq!(gene_doc.0, expected_pair.0);
+        assert_eq!(gene_doc.1, expected_pair.1);
     }
 }
