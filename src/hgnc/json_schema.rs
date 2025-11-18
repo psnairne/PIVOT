@@ -1,0 +1,96 @@
+use serde::{Deserialize, Serialize};
+
+use std::fmt::Debug;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GeneResponse {
+    #[serde(rename = "responseHeader")]
+    pub response_header: ResponseHeader,
+    pub response: Response,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ResponseHeader {
+    pub status: i32,
+    #[serde(rename = "QTime")]
+    pub q_time: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Response {
+    #[serde(rename = "numFound")]
+    pub num_found: i32,
+    pub start: i32,
+    #[serde(rename = "numFoundExact")]
+    pub num_found_exact: bool,
+    pub docs: Vec<GeneDoc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[repr(C)]
+pub struct GeneDoc {
+    #[serde(default)]
+    pub ena: Vec<String>,
+    #[serde(default)]
+    pub orphanet: Option<i64>,
+    #[serde(default)]
+    pub hgnc_id: Option<String>,
+    #[serde(default)]
+    pub pubmed_id: Vec<i64>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub uuid: Option<String>,
+    #[serde(default)]
+    pub ensembl_gene_id: Option<String>,
+    #[serde(default)]
+    pub locus_group: Option<String>,
+    #[serde(default)]
+    pub mgd_id: Vec<String>,
+    #[serde(default)]
+    pub location: Option<String>,
+    #[serde(default)]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub cosmic: Option<String>,
+    #[serde(default)]
+    pub ucsc_id: Option<String>,
+    #[serde(default)]
+    pub date_name_changed: Option<String>,
+    #[serde(default)]
+    pub prev_name: Vec<String>,
+    #[serde(default)]
+    pub ccds_id: Vec<String>,
+    #[serde(default)]
+    pub mane_select: Vec<String>,
+    #[serde(default)]
+    pub refseq_accession: Vec<String>,
+    #[serde(default)]
+    pub rgd_id: Vec<String>,
+    #[serde(default)]
+    pub date_approved_reserved: Option<String>,
+    #[serde(default)]
+    pub entrez_id: Option<String>,
+    #[serde(default)]
+    pub uniprot_ids: Vec<String>,
+    #[serde(default)]
+    pub lsdb: Vec<String>,
+    #[serde(default)]
+    pub locus_type: Option<String>,
+    #[serde(default)]
+    pub gene_group: Vec<String>,
+    #[serde(default)]
+    pub alias_symbol: Vec<String>,
+    #[serde(default)]
+    pub agr: Option<String>,
+    #[serde(default)]
+    pub date_modified: Option<String>,
+    #[serde(default)]
+    pub omim_id: Vec<String>,
+    #[serde(default)]
+    pub gene_group_id: Vec<i32>,
+    #[serde(default)]
+    pub vega_id: Option<String>,
+    #[serde(default)]
+    pub symbol: Option<String>,
+}
