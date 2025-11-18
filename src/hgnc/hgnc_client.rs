@@ -53,21 +53,11 @@ impl HGNCData for HGNCClient {
         };
         let docs = self.fetch_request(fetch_url)?;
 
-        let result = match query {
-            GeneQuery::Symbol(symbol) => docs
-                .into_iter()
-                .find(|doc| doc.symbol.as_deref() == Some(symbol)),
-            GeneQuery::HgncId(id) => docs
-                .into_iter()
-                .find(|doc| doc.hgnc_id.as_deref() == Some(id)),
-        };
-
-        result.ok_or_else(|| {
-            HGNCError::NoDocumentFound(match query {
-                GeneQuery::Symbol(s) => s.to_string(),
-                GeneQuery::HgncId(id) => id.to_string(),
-            })
-        })
+        if docs.len() == 1 {
+            Ok(docs.first().unwrap().clone())
+        } else {
+            Err(HGNCError::NoDocumentFound(query.inner().to_string()))
+        }
     }
 
     fn request_hgnc_id(&self, symbol: &str) -> Result<String, HGNCError> {
