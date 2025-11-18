@@ -67,8 +67,8 @@ impl<'a> PathogenicGeneVariantData<'a> {
                 }
             }
             _ => Err(PivotError::InvalidGeneVariantConfiguration {
-                n_genes: genes.len() ,
-                n_variants: hgvs_strings.len() ,
+                n_genes: genes.len(),
+                n_variants: hgvs_strings.len(),
             }),
         }
     }
