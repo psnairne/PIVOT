@@ -1,6 +1,18 @@
-#[derive(Debug)]
+use crate::hgnc::error::HGNCError;
+use thiserror::Error;
+
+#[derive(Debug, Error)]
 pub enum PivotError {
-    HgncError(String),
-    IncorrectGeneData(String),
-    InvalidGeneVariantConfiguration(String),
+    #[error(transparent)]
+    HgncError(#[from] HGNCError),
+    #[error("Provided {id_type} {gene} does not match with HGVS variant {hgnc_id}")]
+    IncorrectGeneData {
+        id_type: String,
+        gene: String,
+        hgnc_id: String,
+    },
+    #[error(
+        "Invalid quantity of genes '{n_genes}' and HGVS variants '{n_variants}'. Could not interpret as PathogenicGeneVariantData."
+    )]
+    InvalidGeneVariantConfiguration { n_genes: usize, n_variants: usize },
 }

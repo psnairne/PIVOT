@@ -7,10 +7,19 @@ license = "MIT"
 name = "pivot"
 version = "0.1.0"
 
+
 [dependencies]
 phenopackets = { version = "0.2.2-post1", features = ["serde"] }
 rstest = "0.26.1"
 serde = "1.0.228"
+thiserror = "2.0.17"
+ratelimit = "0.10.0"
+redb = "3.1.0"
+directories = "6.0.0"
+reqwest = { version = "0.12.24", features = ["blocking", "json"] }
+serde_json = "1.0.145"
+regex = "1.12.2"
 
 [dev-dependencies]
 rstest = "0.26.1"
+tempfile = "3.23.0"
