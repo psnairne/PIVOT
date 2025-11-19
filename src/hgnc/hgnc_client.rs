@@ -55,15 +55,23 @@ impl HGNCData for HGNCClient {
 
         if docs.len() == 1 {
             Ok(docs.first().unwrap().clone())
-        } else  {
-            Err(HGNCError::UnexpectedNumberOfDocuments{identifier:query.inner().to_string(),n_found: docs.len(), n_expected: 1} )
+        } else {
+            Err(HGNCError::UnexpectedNumberOfDocuments {
+                identifier: query.inner().to_string(),
+                n_found: docs.len(),
+                n_expected: 1,
+            })
         }
     }
 
     fn request_hgnc_id(&self, symbol: &str) -> Result<String, HGNCError> {
         let doc = self.request_gene_data(GeneQuery::Symbol(symbol))?;
         match doc.hgnc_id {
-            None =>Err(HGNCError::UnexpectedNumberOfDocuments{identifier:symbol.to_string(),n_found: 0, n_expected: 1} ),
+            None => Err(HGNCError::UnexpectedNumberOfDocuments {
+                identifier: symbol.to_string(),
+                n_found: 0,
+                n_expected: 1,
+            }),
             Some(hg_id) => Ok(hg_id),
         }
     }
@@ -72,7 +80,11 @@ impl HGNCData for HGNCClient {
         let doc = self.request_gene_data(GeneQuery::HgncId(hgnc_id))?;
 
         match doc.symbol {
-            None => Err(HGNCError::UnexpectedNumberOfDocuments{identifier:hgnc_id.to_string(),n_found: 0, n_expected: 1} ),
+            None => Err(HGNCError::UnexpectedNumberOfDocuments {
+                identifier: hgnc_id.to_string(),
+                n_found: 0,
+                n_expected: 1,
+            }),
             Some(symbol) => Ok(symbol),
         }
     }
@@ -88,7 +100,11 @@ impl HGNCData for HGNCClient {
         {
             return Ok((hgnc_id, symbol));
         }
-        Err(HGNCError::UnexpectedNumberOfDocuments{identifier:query.inner().to_string(),n_found: 0, n_expected: 1} )
+        Err(HGNCError::UnexpectedNumberOfDocuments {
+            identifier: query.inner().to_string(),
+            n_found: 0,
+            n_expected: 1,
+        })
     }
 }
 

@@ -84,7 +84,11 @@ impl HGNCData for CachedHGNCClient {
         if let Some(hgnc_id) = &doc.hgnc_id {
             Ok(hgnc_id.clone())
         } else {
-            Err(HGNCError::UnexpectedNumberOfDocuments{identifier:symbol.to_string(),n_found: 0, n_expected: 1} )
+            Err(HGNCError::UnexpectedNumberOfDocuments {
+                identifier: symbol.to_string(),
+                n_found: 0,
+                n_expected: 1,
+            })
         }
     }
 
@@ -94,7 +98,11 @@ impl HGNCData for CachedHGNCClient {
         if let Some(hgnc_id) = &doc.hgnc_id {
             Ok(hgnc_id.clone())
         } else {
-            Err(HGNCError::UnexpectedNumberOfDocuments{identifier:hgnc_id.to_string(),n_found: 0, n_expected: 1} )
+            Err(HGNCError::UnexpectedNumberOfDocuments {
+                identifier: hgnc_id.to_string(),
+                n_found: 0,
+                n_expected: 1,
+            })
         }
     }
 
@@ -109,8 +117,11 @@ impl HGNCData for CachedHGNCClient {
         {
             return Ok((hgnc_id, symbol));
         }
-        Err(HGNCError::UnexpectedNumberOfDocuments{identifier:query.inner().to_string(),n_found: 0, n_expected: 1} )
-
+        Err(HGNCError::UnexpectedNumberOfDocuments {
+            identifier: query.inner().to_string(),
+            n_found: 0,
+            n_expected: 1,
+        })
     }
 }
 
