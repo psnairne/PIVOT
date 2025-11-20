@@ -21,7 +21,7 @@ pub struct VariantManager {
 }
 
 impl VariantManager {
-    pub fn new(symbol: &str, hgnc: &str, transcript: &str) -> Self {
+    pub fn new() -> Self {
         Self {
             hgvs_validator: HgvsVariantValidator::hg38(),
             hgvs_set: HashSet::new(),
@@ -67,14 +67,13 @@ impl VariantManager {
         let hgvs_string = unvalidated_hgvs.to_string();
         let variant_key = unvalidated_hgvs.get_variant_key().to_string();
         if self.validated_hgvs.contains_key(&variant_key) {
-            return true;
-        }
-        if let Ok(validated_hgvs) = self.hgvs_validator.validate(unvalidated_hgvs) {
+            true
+        } else if let Ok(validated_hgvs) = self.hgvs_validator.validate(unvalidated_hgvs) {
             self.validated_hgvs.insert(variant_key, validated_hgvs);
-            return true;
+            true
         } else {
             eprint!("Could not validate HGVS {}", hgvs_string);
-            return false;
+            false
         }
     }
 
@@ -88,5 +87,11 @@ impl VariantManager {
         } else {
             self.hgvs_validator.validate(unvalidated_hgvs)
         }
+    }
+}
+
+impl Default for VariantManager {
+    fn default() -> Self {
+        Self::new()
     }
 }

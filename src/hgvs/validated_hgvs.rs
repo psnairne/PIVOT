@@ -42,6 +42,7 @@ pub struct ValidatedHgvs {
 }
 
 impl ValidatedHgvs {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         assembly: String,
         vcf_var: VcfVar,
@@ -74,6 +75,7 @@ impl ValidatedHgvs {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new_from_parts(
         assembly: String,
         chromosome: String,
@@ -125,10 +127,7 @@ impl ValidatedHgvs {
     }
 
     pub fn p_hgvs(&self) -> Option<String> {
-        match &self.p_hgvs {
-            Some(phgvs) => Some(phgvs.to_string()),
-            None => None,
-        }
+        self.p_hgvs.as_ref().map(|phgvs| phgvs.to_string())
     }
 
     pub fn transcript(&self) -> &str {
@@ -140,7 +139,7 @@ impl ValidatedHgvs {
     }
 
     pub fn is_x_chromosomal(&self) -> bool {
-        return self.chr.contains("X");
+        self.chr.contains("X")
     }
 
     pub fn from_hgvs_string(_hgvs: &str) -> Result<Self, PivotError> {

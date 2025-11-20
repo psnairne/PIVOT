@@ -1,4 +1,3 @@
-mod acmg;
 mod hgvs_variant_validator;
 mod unvalidated_hgvs;
 pub mod validated_hgvs;
