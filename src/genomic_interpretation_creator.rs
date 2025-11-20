@@ -1,7 +1,7 @@
 use crate::error::PivotError;
 use crate::hgnc::enums::GeneQuery;
 use crate::hgnc::traits::HGNCData;
-use crate::hgvs_variant::HgvsVariant;
+use crate::hgvs::validated_hgvs::ValidatedHgvs;
 use crate::pathogenic_gene_variant_data::PathogenicGeneVariantData;
 use phenopackets::ga4gh::vrsatile::v1::GeneDescriptor;
 use phenopackets::schema::v2::core::GenomicInterpretation;
@@ -96,7 +96,7 @@ where
         gene: Option<&str>,
         allelic_count: usize,
     ) -> Result<GenomicInterpretation, PivotError> {
-        let hgvs_variant = HgvsVariant::from_hgvs_string(hgvs)?;
+        let hgvs_variant = ValidatedHgvs::from_hgvs_string(hgvs)?;
 
         if let Some(gene) = gene {
             hgvs_variant.validate_against_gene(gene)?;

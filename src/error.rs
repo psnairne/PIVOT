@@ -15,4 +15,8 @@ pub enum PivotError {
         "Invalid quantity of genes '{n_genes}' and HGVS variants '{n_variants}'. Could not interpret as PathogenicGeneVariantData."
     )]
     InvalidGeneVariantConfiguration { n_genes: usize, n_variants: usize },
+    #[error("None ASCII character found in HGVS string: {0}")]
+    NonAsciiCharacter(String),
+    #[error("Problem {problem} in found HGVS: {hgvs} ")]
+    IncorrectHGVSFormat { hgvs: String, problem: String },
 }
