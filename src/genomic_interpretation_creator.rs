@@ -8,7 +8,6 @@ use phenopackets::ga4gh::vrsatile::v1::GeneDescriptor;
 use phenopackets::schema::v2::core::GenomicInterpretation;
 use phenopackets::schema::v2::core::genomic_interpretation::Call;
 use regex::Regex;
-use std::collections::HashSet;
 
 pub struct GenomicInterpretationCreator<T: HGNCData> {
     hgnc_client: T,
@@ -20,14 +19,11 @@ impl<T> GenomicInterpretationCreator<T>
 where
     T: HGNCData,
 {
-    pub fn new(
-        hgnc_client: T,
-        hgvs_set: HashSet<UnvalidatedHgvs>,
-    ) -> GenomicInterpretationCreator<T> {
+    pub fn new(hgnc_client: T) -> GenomicInterpretationCreator<T> {
         GenomicInterpretationCreator {
             hgnc_client,
             hgnc_id_regex: Regex::new("^HGNC:[0-9_]+$").expect("Invalid regex"),
-            variant_manager: VariantManager::new(hgvs_set),
+            variant_manager: VariantManager::default(),
         }
     }
 
@@ -106,13 +102,11 @@ where
     ) -> Result<GenomicInterpretation, PivotError> {
         let unvalidated_hgvs = UnvalidatedHgvs::from_hgvs_string(hgvs)?;
 
-        let validation_result = self.variant_manager.get_validated_hgvs(&unvalidated_hgvs);
-
         let mut latency = 250;
         let mut attempts = 1;
 
         while attempts < 4 {
-            let validation_result = self.variant_manager.get_validated_hgvs(&unvalidated_hgvs);
+            let validation_result = self.variant_manager.validate_hgvs(&unvalidated_hgvs);
             if let Ok(validated_hgvs) = validation_result {
                 if let Some(gene) = gene {
                     validated_hgvs.validate_against_gene(gene)?;
@@ -132,6 +126,22 @@ where
             std::thread::sleep(std::time::Duration::from_millis(latency));
         }
 
-        Err(validation_result.err().unwrap())
+        let validation_result = self.variant_manager.validate_hgvs(&unvalidated_hgvs);
+        match validation_result {
+            Ok(validated_hgvs) => {
+                if let Some(gene) = gene {
+                    validated_hgvs.validate_against_gene(gene)?;
+                }
+
+                Ok(GenomicInterpretation {
+                    subject_or_biosample_id: patient_id.to_string(),
+                    call: Some(Call::VariantInterpretation(
+                        validated_hgvs.get_hgvs_variant_interpretation(allelic_count),
+                    )),
+                    ..Default::default()
+                })
+            }
+            Err(e) => Err(e),
+        }
     }
 }
