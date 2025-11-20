@@ -142,10 +142,6 @@ impl ValidatedHgvs {
         self.chr.contains("X")
     }
 
-    pub fn from_hgvs_string(_hgvs: &str) -> Result<Self, PivotError> {
-        todo!()
-    }
-
     pub fn validate_against_gene(&self, gene: &str) -> Result<(), PivotError> {
         let (expected, id_type) = if is_hgnc_id(gene) {
             (self.hgnc_id.as_str(), "HGNC ID")

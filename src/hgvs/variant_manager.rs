@@ -21,10 +21,10 @@ pub struct VariantManager {
 }
 
 impl VariantManager {
-    pub fn new() -> Self {
+    pub fn new(hgvs_set: HashSet<UnvalidatedHgvs>) -> Self {
         Self {
             hgvs_validator: HgvsVariantValidator::hg38(),
-            hgvs_set: HashSet::new(),
+            hgvs_set,
             validated_hgvs: HashMap::new(),
             no_attempts: 4,
             start_latency: 250,
@@ -68,7 +68,7 @@ impl VariantManager {
         let variant_key = unvalidated_hgvs.get_variant_key().to_string();
         if self.validated_hgvs.contains_key(&variant_key) {
             true
-        } else if let Ok(validated_hgvs) = self.hgvs_validator.validate(unvalidated_hgvs) {
+        } else if let Ok(validated_hgvs) = self.hgvs_validator.validate(&unvalidated_hgvs) {
             self.validated_hgvs.insert(variant_key, validated_hgvs);
             true
         } else {
@@ -79,8 +79,8 @@ impl VariantManager {
 
     pub fn get_validated_hgvs(
         &self,
-        unvalidated_hgvs: UnvalidatedHgvs,
-    ) -> Result<ValidatedHgvs, String> {
+        unvalidated_hgvs: &UnvalidatedHgvs,
+    ) -> Result<ValidatedHgvs, PivotError> {
         let variant_key = unvalidated_hgvs.get_variant_key();
         if let Some(var) = self.validated_hgvs.get(variant_key) {
             Ok(var.clone())
@@ -92,6 +92,6 @@ impl VariantManager {
 
 impl Default for VariantManager {
     fn default() -> Self {
-        Self::new()
+        Self::new(HashSet::new())
     }
 }

@@ -1,26 +1,33 @@
 use crate::error::PivotError;
 use crate::hgnc::enums::GeneQuery;
 use crate::hgnc::traits::HGNCData;
-use crate::hgvs::validated_hgvs::ValidatedHgvs;
+use crate::hgvs::unvalidated_hgvs::UnvalidatedHgvs;
+use crate::hgvs::variant_manager::VariantManager;
 use crate::pathogenic_gene_variant_data::PathogenicGeneVariantData;
 use phenopackets::ga4gh::vrsatile::v1::GeneDescriptor;
 use phenopackets::schema::v2::core::GenomicInterpretation;
 use phenopackets::schema::v2::core::genomic_interpretation::Call;
 use regex::Regex;
+use std::collections::HashSet;
 
 pub struct GenomicInterpretationCreator<T: HGNCData> {
     hgnc_client: T,
     hgnc_id_regex: Regex,
+    variant_manager: VariantManager,
 }
 
 impl<T> GenomicInterpretationCreator<T>
 where
     T: HGNCData,
 {
-    pub fn new(hgnc_client: T) -> GenomicInterpretationCreator<T> {
+    pub fn new(
+        hgnc_client: T,
+        hgvs_set: HashSet<UnvalidatedHgvs>,
+    ) -> GenomicInterpretationCreator<T> {
         GenomicInterpretationCreator {
             hgnc_client,
             hgnc_id_regex: Regex::new("^HGNC:[0-9_]+$").expect("Invalid regex"),
+            variant_manager: VariantManager::new(hgvs_set),
         }
     }
 
@@ -38,7 +45,7 @@ where
     ///
     /// If PathogenicGeneVariantData = HeterozygousVariant | HomozygousVariant | CompoundHeterozygousVariantPair and if gene = Some then it will be validated that the variants lie within this gene.
     pub fn create(
-        &self,
+        &mut self,
         patient_id: &str,
         gene_variant_data: &PathogenicGeneVariantData,
     ) -> Result<Vec<GenomicInterpretation>, PivotError> {
@@ -76,7 +83,7 @@ where
                 let allelic_count = gene_variant_data.get_allelic_count();
 
                 for hgvs in gene_variant_data.get_vars() {
-                    let gi = Self::get_genomic_interpretation_from_hgvs_data(
+                    let gi = self.get_genomic_interpretation_from_hgvs_data(
                         patient_id,
                         hgvs,
                         gene,
@@ -91,23 +98,40 @@ where
     }
 
     fn get_genomic_interpretation_from_hgvs_data(
+        &mut self,
         patient_id: &str,
         hgvs: &str,
         gene: Option<&str>,
         allelic_count: usize,
     ) -> Result<GenomicInterpretation, PivotError> {
-        let hgvs_variant = ValidatedHgvs::from_hgvs_string(hgvs)?;
+        let unvalidated_hgvs = UnvalidatedHgvs::from_hgvs_string(hgvs)?;
 
-        if let Some(gene) = gene {
-            hgvs_variant.validate_against_gene(gene)?;
+        let validation_result = self.variant_manager.get_validated_hgvs(&unvalidated_hgvs);
+
+        let mut latency = 250;
+        let mut attempts = 1;
+
+        while attempts < 4 {
+            let validation_result = self.variant_manager.get_validated_hgvs(&unvalidated_hgvs);
+            if let Ok(validated_hgvs) = validation_result {
+                if let Some(gene) = gene {
+                    validated_hgvs.validate_against_gene(gene)?;
+                }
+
+                return Ok(GenomicInterpretation {
+                    subject_or_biosample_id: patient_id.to_string(),
+                    call: Some(Call::VariantInterpretation(
+                        validated_hgvs.get_hgvs_variant_interpretation(allelic_count),
+                    )),
+                    ..Default::default()
+                });
+            }
+            latency += 250;
+            attempts += 1;
+
+            std::thread::sleep(std::time::Duration::from_millis(latency));
         }
 
-        let variant_interpretation = hgvs_variant.get_hgvs_variant_interpretation(allelic_count);
-
-        Ok(GenomicInterpretation {
-            subject_or_biosample_id: patient_id.to_string(),
-            call: Some(Call::VariantInterpretation(variant_interpretation)),
-            ..Default::default()
-        })
+        Err(validation_result.err().unwrap())
     }
 }

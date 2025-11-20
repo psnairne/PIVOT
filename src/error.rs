@@ -19,4 +19,6 @@ pub enum PivotError {
     NonAsciiCharacter(String),
     #[error("Problem {problem} in found HGVS: {hgvs} ")]
     IncorrectHGVSFormat { hgvs: String, problem: String },
+    #[error("Temporary Error")]
+    TemporaryError,
 }
