@@ -174,6 +174,6 @@ mod tests {
             gene: Some("HGNC:19349"),
         };
 
-        let gi = gi_creator.create("P001", &variant_gene_data).unwrap();
+        let _gi = gi_creator.create("P001", &variant_gene_data).unwrap();
     }
 }

@@ -18,7 +18,7 @@ impl VariantManager {
     }
 
     /// Validates a Hgvs with the VariantValidator API and against a gene
-    /// Uses the already_validated HashMap to avoid doing repeat requests
+    /// Uses the validated_hgvs HashMap to avoid doing repeat requests
     pub fn validate_hgvs(
         &mut self,
         unvalidated_hgvs: &UnvalidatedHgvs,
