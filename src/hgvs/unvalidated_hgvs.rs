@@ -64,7 +64,6 @@ impl UnvalidatedHgvs {
         }
     }
 
-    /// blah
     pub fn generate_variant_key(transcript: &str, allele: &str) -> String {
         let transcript_norm = transcript.replace('.', "v");
 

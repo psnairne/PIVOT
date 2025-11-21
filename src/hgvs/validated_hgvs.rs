@@ -160,6 +160,7 @@ impl ValidatedHgvs {
         }
     }
 
+    /// Creates a VI from the ValidatedHGVS
     pub fn get_hgvs_variant_interpretation(&self, allele_count: usize) -> VariantInterpretation {
         let gene_ctxt = GeneDescriptor {
             value_id: self.hgnc_id.to_string(),

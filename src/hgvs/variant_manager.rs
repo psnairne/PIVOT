@@ -6,7 +6,6 @@ use std::collections::HashMap;
 
 pub struct VariantManager {
     hgvs_validator: HgvsVariantValidator,
-    /// HGVS Variants that could be validated. The key is the original allele denomination (e.g., c.1234A>T), not the variantKey
     validated_hgvs: HashMap<String, ValidatedHgvs>,
 }
 
@@ -18,21 +17,33 @@ impl VariantManager {
         }
     }
 
-    /// blah
+    /// Validates a Hgvs with the VariantValidator API and against a gene
+    /// Uses the already_validated HashMap to avoid doing repeat requests
     pub fn validate_hgvs(
         &mut self,
         unvalidated_hgvs: &UnvalidatedHgvs,
+        gene: Option<&str>,
     ) -> Result<&ValidatedHgvs, PivotError> {
         let variant_key = unvalidated_hgvs.get_variant_key().to_string();
-        if self.validated_hgvs.contains_key(&variant_key) {
-            Ok(self.validated_hgvs.get(&variant_key).unwrap())
-        } else if let Ok(validated_hgvs) = self.hgvs_validator.validate(unvalidated_hgvs) {
-            self.validated_hgvs
-                .insert(variant_key.clone(), validated_hgvs);
-            Ok(self.validated_hgvs.get(&variant_key).unwrap())
-        } else {
-            Err(PivotError::TemporaryError)
+
+        let already_validated = self.validated_hgvs.contains_key(&variant_key);
+
+        if !already_validated {
+            if let Ok(validated_hgvs) = self.hgvs_validator.validate(unvalidated_hgvs) {
+                self.validated_hgvs
+                    .insert(variant_key.clone(), validated_hgvs);
+            } else {
+                return Err(PivotError::TemporaryError);
+            }
         }
+
+        let validated_hgvs = self.validated_hgvs.get(&variant_key).unwrap();
+
+        if let Some(gene) = gene {
+            validated_hgvs.validate_against_gene(gene)?;
+        }
+
+        Ok(validated_hgvs)
     }
 }
 

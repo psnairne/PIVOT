@@ -28,17 +28,8 @@ impl HgvsVariantValidator {
         }
     }
 
-    /// Reach out to the VariantValidator API and create an HgvsVariant object from a transcript and HGVS expression
-    ///
-    /// # Arguments
-    ///
-    /// * `hgvs` - a Human Genome Variation Society (HGVS) string such as c.123C>T
-    /// * `transcript`- the transcript with version number for the HGVS expression
-    ///
-    /// # Returns
-    ///
-    /// - `Ok(HgvsVariant)` - An object with information about the variant derived from VariantValidator
-    /// - `Err(Error)` - An error if the API call fails (which may happen because of malformed input or network issues).
+    /// Reach out to the VariantValidator API and create an ValidatedHgvs Object from an UnvalidatedHgvs
+    /// (if the Hgvs is valid)
     pub fn validate(
         &self,
         unvalidated_hgvs: &UnvalidatedHgvs,
@@ -66,7 +57,6 @@ impl HgvsVariantValidator {
             .ok_or_else(|| PivotError::TemporaryError)?;
 
         let var = &response[variant_key];
-        println!("{}", serde_json::to_string_pretty(var).unwrap());
 
         let hgnc = var
             .get("gene_ids")
@@ -103,7 +93,6 @@ impl HgvsVariantValidator {
             .ok_or_else(|| PivotError::TemporaryError)?;
         // this field is like NM_000138.5:c.8242G>T - let's just take the first part
         let transcript = hgvs_transcript_var.split(':').next().unwrap_or("");
-        println!("transcript: {transcript} hgvs var tr {hgvs_transcript_var}");
 
         let genomic_hgvs = assembly
             .get("hgvs_genomic_description")
