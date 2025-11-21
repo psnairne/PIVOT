@@ -1,0 +1,54 @@
+use crate::error::PivotError;
+use crate::hgvs::hgvs_variant_validator::HgvsVariantValidator;
+use crate::hgvs::unvalidated_hgvs::UnvalidatedHgvs;
+use crate::hgvs::validated_hgvs::ValidatedHgvs;
+use std::collections::HashMap;
+
+pub struct VariantManager {
+    hgvs_validator: HgvsVariantValidator,
+    validated_hgvs: HashMap<String, ValidatedHgvs>,
+}
+
+impl VariantManager {
+    pub fn new() -> Self {
+        Self {
+            hgvs_validator: HgvsVariantValidator::hg38(),
+            validated_hgvs: HashMap::new(),
+        }
+    }
+
+    /// Validates a Hgvs with the VariantValidator API and against a gene
+    /// Uses the validated_hgvs HashMap to avoid doing repeat requests
+    pub fn validate_hgvs(
+        &mut self,
+        unvalidated_hgvs: &UnvalidatedHgvs,
+        gene: Option<&str>,
+    ) -> Result<&ValidatedHgvs, PivotError> {
+        let variant_key = unvalidated_hgvs.get_variant_key().to_string();
+
+        let already_validated = self.validated_hgvs.contains_key(&variant_key);
+
+        if !already_validated {
+            if let Ok(validated_hgvs) = self.hgvs_validator.validate(unvalidated_hgvs) {
+                self.validated_hgvs
+                    .insert(variant_key.clone(), validated_hgvs);
+            } else {
+                return Err(PivotError::TemporaryError);
+            }
+        }
+
+        let validated_hgvs = self.validated_hgvs.get(&variant_key).unwrap();
+
+        if let Some(gene) = gene {
+            validated_hgvs.validate_against_gene(gene)?;
+        }
+
+        Ok(validated_hgvs)
+    }
+}
+
+impl Default for VariantManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
