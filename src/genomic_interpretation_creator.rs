@@ -8,18 +8,16 @@ use phenopackets::schema::v2::core::GenomicInterpretation;
 use phenopackets::schema::v2::core::genomic_interpretation::Call;
 use regex::Regex;
 
-pub struct GenomicInterpretationCreator<T: HGNCData> {
-    hgnc_client: T,
+pub struct GenomicInterpretationCreator {
+    hgnc_client: Box<dyn HGNCData>,
     hgnc_id_regex: Regex,
 }
 
-impl<T> GenomicInterpretationCreator<T>
-where
-    T: HGNCData,
+impl GenomicInterpretationCreator
 {
-    pub fn new(hgnc_client: T) -> GenomicInterpretationCreator<T> {
+    pub fn new(hgnc_client: impl HGNCData + 'static) -> GenomicInterpretationCreator {
         GenomicInterpretationCreator {
-            hgnc_client,
+            hgnc_client: Box::new(hgnc_client),
             hgnc_id_regex: Regex::new("^HGNC:[0-9_]+$").expect("Invalid regex"),
         }
     }
