@@ -144,7 +144,7 @@ mod tests {
         );
 
         docs.insert(
-            "BAD_DATA".to_string(),
+            "NO_SYMBOL_DATA".to_string(),
             GeneDoc::default().hgnc_id("HGNC:9999"),
         );
 
@@ -218,11 +218,11 @@ mod tests {
     fn test_missing_fields_returns_error() {
         let mock = setup_mock();
 
-        let result = mock.request_gene_symbol("BAD_DATA");
+        let result = mock.request_gene_symbol("NO_SYMBOL_DATA");
 
         assert!(result.is_err());
         if let Err(HGNCError::UnexpectedNumberOfDocuments { identifier, .. }) = result {
-            assert_eq!(identifier, "BAD_DATA");
+            assert_eq!(identifier, "NO_SYMBOL_DATA");
         } else {
             panic!("Should fail due to missing field in doc");
         }
