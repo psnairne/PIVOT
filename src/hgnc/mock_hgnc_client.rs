@@ -166,11 +166,9 @@ mod tests {
     fn test_missing_fields_returns_error() {
         let mock = setup_mock();
 
-        // This doc exists ("BAD_DATA") but has no symbol
         let result = mock.request_gene_symbol("BAD_DATA");
 
         assert!(result.is_err());
-        // It should fail because the symbol field is None inside the doc
         if let Err(HGNCError::UnexpectedNumberOfDocuments { identifier, .. }) = result {
             assert_eq!(identifier, "BAD_DATA");
         } else {
