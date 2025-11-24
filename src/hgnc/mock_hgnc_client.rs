@@ -92,18 +92,15 @@ impl Default for MockHGNClient {
             GeneDoc::default().hgnc_id("HGNC:2082").symbol("CLOCK"),
         );
 
-
         docs.insert(
             "CLOCK".to_string(),
             GeneDoc::default().hgnc_id("HGNC:2082").symbol("CLOCK"),
         );
 
-
         docs.insert(
             "HGNC:10848".to_string(),
             GeneDoc::default().hgnc_id("HGNC:10848").symbol("SHH"),
         );
-
 
         docs.insert(
             "SHH".to_string(),
@@ -114,7 +111,6 @@ impl Default for MockHGNClient {
             "HGNC:11251".to_string(),
             GeneDoc::default().hgnc_id("HGNC:11251").symbol("SPOCK1"),
         );
-
 
         docs.insert(
             "SPOCK1".to_string(),
