@@ -13,8 +13,7 @@ pub struct GenomicInterpretationCreator {
     hgnc_id_regex: Regex,
 }
 
-impl GenomicInterpretationCreator
-{
+impl GenomicInterpretationCreator {
     pub fn new(hgnc_client: impl HGNCData + 'static) -> GenomicInterpretationCreator {
         GenomicInterpretationCreator {
             hgnc_client: Box::new(hgnc_client),

@@ -22,13 +22,14 @@ impl MockHGNClient {
 impl HGNCData for MockHGNClient {
     fn request_gene_data(&self, query: GeneQuery) -> Result<GeneDoc, HGNCError> {
         let identifier = query.inner();
-        self.docs.get(identifier).cloned().ok_or(
-            HGNCError::UnexpectedNumberOfDocuments {
+        self.docs
+            .get(identifier)
+            .cloned()
+            .ok_or(HGNCError::UnexpectedNumberOfDocuments {
                 identifier: identifier.to_string(),
                 n_found: 0,
                 n_expected: 1,
-            },
-        )
+            })
     }
 
     fn request_hgnc_id(&self, symbol: &str) -> Result<String, HGNCError> {
