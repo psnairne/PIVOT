@@ -26,7 +26,7 @@ pub struct Response {
     pub docs: Vec<GeneDoc>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[repr(C)]
 pub struct GeneDoc {
     #[serde(default)]
@@ -93,4 +93,20 @@ pub struct GeneDoc {
     pub vega_id: Option<String>,
     #[serde(default)]
     pub symbol: Option<String>,
+}
+
+impl GeneDoc {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn hgnc_id(mut self, hgnc_id: impl Into<String>) -> Self {
+        self.hgnc_id = Some(hgnc_id.into());
+        self
+    }
+
+    pub fn symbol(mut self, symbol: impl Into<String>) -> Self {
+        self.symbol = Some(symbol.into());
+        self
+    }
 }
