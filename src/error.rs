@@ -15,4 +15,8 @@ pub enum PivotError {
         "Invalid quantity of genes '{n_genes}' and HGVS variants '{n_variants}'. Could not interpret as PathogenicGeneVariantData."
     )]
     InvalidGeneVariantConfiguration { n_genes: usize, n_variants: usize },
+    #[error(
+        "Temp"
+    )]
+    TemporaryError,
 }
