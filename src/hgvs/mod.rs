@@ -1,3 +1,4 @@
+mod error;
 mod traits;
 mod validated_hgvs;
-mod error;
+mod vcf_var;
