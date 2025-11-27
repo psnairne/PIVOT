@@ -4,3 +4,4 @@ pub mod hgnc;
 mod hgvs_variant;
 pub mod pathogenic_gene_variant_data;
 mod utils;
+mod hgvs;
