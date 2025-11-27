@@ -9,6 +9,12 @@ use crate::hgvs::error::HGVSError;
 use crate::hgvs::traits::HGVSData;
 use crate::hgvs::validated_hgvs::ValidatedHgvs;
 
+pub fn hg38() -> Self {
+    Self {
+        genome_assembly: GENOME_ASSEMBLY_HG38.to_string(),
+    }
+}
+
 pub struct HGVSClient {
     rate_limiter: Ratelimiter,
     api_url: String,
