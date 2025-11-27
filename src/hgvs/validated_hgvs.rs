@@ -7,6 +7,7 @@ use phenopackets::schema::v2::core::{
     AcmgPathogenicityClassification, TherapeuticActionability, VariantInterpretation,
 };
 use serde::{Deserialize, Serialize};
+use crate::hgvs::vcf_var::VcfVar;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
