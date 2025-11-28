@@ -64,8 +64,7 @@ impl HGVSClient {
 
 impl HGVSData for HGVSClient {
     fn request_variant_data(&self, unvalidated_hgvs: &str) -> Result<ValidatedHgvs, HGVSError> {
-        let transcript = unvalidated_hgvs.get_transcript();
-        let allele = unvalidated_hgvs.get_allele();
+        let (transcript, allele) = Self::get_transcript_and_allele(unvalidated_hgvs)?;
         let url = get_variant_validator_url(&self.genome_assembly, transcript, allele);
         let response: Value = get(&url)
             .map_err(|_| PivotError::TemporaryError)?
@@ -170,7 +169,18 @@ impl HGVSData for HGVSClient {
 }
 
 impl HGVSClient {
-    fn get_transcript_and_allele(unvalidated_hgvs: &str) -> (&str, &str) {
-        
+    fn get_transcript_and_allele(unvalidated_hgvs: &str) -> Result<(&str, &str), HGVSError> {
+        let colon_count = unvalidated_hgvs.matches(':').count();
+        if colon_count != 1 {
+            Err(HGVSError::IncorrectHGVSFormat {
+                hgvs: unvalidated_hgvs.to_string(),
+                problem: "There must be exactly one colon in a HGVS string.".to_string(),
+            })
+        } else {
+            let split_hgvs = unvalidated_hgvs.split(':').collect::<Vec<&str>>();
+            let transcript = split_hgvs[0];
+            let allele = split_hgvs[1];
+            Ok((transcript, allele))
+        }
     }
 }
