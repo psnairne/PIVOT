@@ -72,7 +72,10 @@ impl HGVSClient {
 }
 
 impl HGVSData for HGVSClient {
-    fn request_and_validate_hgvs(&self, unvalidated_hgvs: &str) -> Result<ValidatedHgvs, HGVSError> {
+    fn request_and_validate_hgvs(
+        &self,
+        unvalidated_hgvs: &str,
+    ) -> Result<ValidatedHgvs, HGVSError> {
         let (transcript, allele) = Self::get_transcript_and_allele(unvalidated_hgvs)?;
 
         let fetch_url = self.get_fetch_url(transcript, allele);
@@ -113,8 +116,6 @@ impl HGVSData for HGVSClient {
 
         let gene_symbol = variant_info.gene_symbol;
         let hgnc_id = variant_info.gene_ids.hgnc_id;
-        
-        let blah = variant_info.hgvs_transcript_variant
 
         let hgvs_predicted_protein_consequence = if variant_info
             .hgvs_predicted_protein_consequence
@@ -172,7 +173,7 @@ mod tests {
     fn test_request() {
         let hgvs = "NM_001173464.1:c.2860C>T";
         let client = HGVSClient::default();
-
-        client.request_and_validate_hgvs(hgvs).unwrap();
+        let validated_hgvs = client.request_and_validate_hgvs(hgvs).unwrap();
+        dbg!(validated_hgvs);
     }
 }

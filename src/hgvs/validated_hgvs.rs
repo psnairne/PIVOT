@@ -1,6 +1,6 @@
-use phenopackets::ga4gh::vrs::v1::feature::Feature::Gene;
 use crate::hgvs::error::HGVSError;
 use crate::utils::{get_allele_term, is_hgnc_id};
+use phenopackets::ga4gh::vrs::v1::feature::Feature::Gene;
 use phenopackets::ga4gh::vrsatile::v1::{
     Expression, GeneDescriptor, MoleculeContext, VariationDescriptor, VcfRecord,
 };
@@ -135,62 +135,58 @@ impl ValidatedHgvs {
 
     /// Create Phenopacket VariantInterpretation from a ValidatedHgvs and an allele count.
     pub fn get_hgvs_variant_interpretation(&self, allele_count: usize) -> VariantInterpretation {
-        let gene_ctxt = GeneDescriptor {
+        let gene_context = GeneDescriptor {
             value_id: self.hgnc_id().to_string(),
             symbol: self.gene_symbol().to_string(),
             ..Default::default()
         };
+
+        let hgvs_c = Expression {
+            // NOTE: EVERYTHING IS CURRENTLY CODED AS IF THE ORIGINAL UNVALIDATED HGVS is HGVS.C!
+            syntax: "hgvs.c".to_string(),
+            value: format!("{}:{}", self.transcript(), self.allele()),
+            version: String::default(),
+        };
+        let hgvs_g = Expression {
+            syntax: "hgvs.g".to_string(),
+            value: self.g_hgvs().to_string(),
+            version: String::default(),
+        };
+        let expressions = if let Some(hgvs_p) = &self.p_hgvs() {
+            let hgvs_p = Expression {
+                syntax: "hgvs.p".to_string(),
+                value: hgvs_p.clone(),
+                version: String::default(),
+            };
+            vec![hgvs_c, hgvs_g, hgvs_p]
+        } else {
+            vec![hgvs_c, hgvs_g]
+        };
+
         let vcf_record = VcfRecord {
             genome_assembly: self.assembly().to_string(),
             chrom: self.chr().to_string(),
             pos: self.position(),
-            id: String::default(),
             r#ref: self.ref_allele().to_string(),
             alt: self.alt_allele().to_string(),
             ..Default::default()
         };
 
-        let hgvs_c = Expression {
-            syntax: "hgvs.c".to_string(),
-            value: format!("{}:{}", self.transcript, self.allele),
-            version: String::default(),
-        };
-        let mut expression_list = vec![hgvs_c];
-        let hgvs_g = Expression {
-            syntax: "hgvs.g".to_string(),
-            value: self.g_hgvs.to_string(),
-            version: String::default(),
-        };
-        expression_list.push(hgvs_g);
-        if let Some(hgsvp) = &self.p_hgvs {
-            let hgvs_p = Expression {
-                syntax: "hgvs.p".to_string(),
-                value: hgsvp.clone(),
-                version: String::default(),
-            };
-            expression_list.push(hgvs_p);
-        };
         let allelic_state = get_allele_term(allele_count, self.is_x_chromosomal());
-        let vdesc = VariationDescriptor {
-            id: self.g_hgvs.to_string(), // I'm not entirely happy with this
-            variation: None,
-            label: String::default(),
-            description: String::default(),
-            gene_context: Some(gene_ctxt),
-            expressions: expression_list,
+
+        let variation_descriptor = VariationDescriptor {
+            id: self.g_hgvs().to_string(), // I'm not entirely happy with this
+            gene_context: Some(gene_context),
+            expressions,
             vcf_record: Some(vcf_record),
-            xrefs: vec![],
-            alternate_labels: vec![],
-            extensions: vec![],
             molecule_context: MoleculeContext::Genomic.into(),
-            structural_type: None,
-            vrs_ref_allele_seq: String::default(),
             allelic_state: Some(allelic_state),
+            ..Default::default()
         };
         VariantInterpretation {
             acmg_pathogenicity_classification: AcmgPathogenicityClassification::Pathogenic.into(),
             therapeutic_actionability: TherapeuticActionability::UnknownActionability.into(),
-            variation_descriptor: Some(vdesc),
+            variation_descriptor: Some(variation_descriptor),
         }
     }
 }
