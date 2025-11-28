@@ -51,8 +51,7 @@ pub struct Annotations {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DbXref {
-    #[serde(rename = "CCDS")]
-    pub ccds: String,
+    pub CCDS: String,
     pub ensemblgene: Option<serde_json::Value>, // Uncertain format
     pub hgnc: String,
     pub ncbigene: String,

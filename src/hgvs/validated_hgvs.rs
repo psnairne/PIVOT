@@ -1,5 +1,5 @@
-use crate::error::PivotError;
-use crate::hgvs::vcf_var::VcfVar;
+use phenopackets::ga4gh::vrs::v1::feature::Feature::Gene;
+use crate::hgvs::error::HGVSError;
 use crate::utils::{get_allele_term, is_hgnc_id};
 use phenopackets::ga4gh::vrsatile::v1::{
     Expression, GeneDescriptor, MoleculeContext, VariationDescriptor, VcfRecord,
@@ -17,80 +17,53 @@ pub struct ValidatedHgvs {
     /// Chromosome, e.g., "17"
     chr: String,
     /// Position on the chromosome
-    position: u32,
+    position: u64,
     /// Reference allele
     ref_allele: String,
     /// Alternate allele
     alt_allele: String,
-    /// Gene symbol, e.g., FBN1
-    symbol: String,
     /// HUGO Gene Nomenclature Committee identifier, e.g., HGNC:3603
     hgnc_id: String,
-    /// HGVS Nomenclature, e.g., c.8242G>T
-    allele: String,
+    /// Gene symbol, e.g., FBN1
+    gene_symbol: String,
     /// Transcript, e.g., NM_000138.5
     transcript: String,
+    /// HGVS Nomenclature, e.g., c.8242G>T
+    allele: String,
     /// Genomic HGVS nomenclature, e.g., NC_000015.10:g.48411364C>A
     g_hgvs: String,
     /// Protein level HGVS, if available
     p_hgvs: Option<String>,
-    /// Key to specify this variant in the HGVS HashMap of the CohortDto
-    /// In our implementation for PubMed curation we will also use the key as the variant_id
-    /// to export to phenopacket
-    variant_key: String,
 }
 
 impl ValidatedHgvs {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         assembly: String,
-        vcf_var: VcfVar,
-        symbol: String,
+        chr: String,
+        position: u64,
+        ref_allele: String,
+        alt_allele: String,
         hgnc_id: String,
-        allele: String,
-        p_hgvs: Option<String>,
+        gene_symbol: String,
         transcript: String,
+        allele: String,
         g_hgvs: String,
+        p_hgvs: Option<String>,
     ) -> Self {
-        let chr = vcf_var.chrom();
-        let position = vcf_var.pos();
-        let ref_allele = vcf_var.ref_allele();
-        let alt_allele = vcf_var.alt_allele();
-        let variant_key = "abc".to_string();
-
         ValidatedHgvs {
             assembly,
             chr,
             position,
             ref_allele,
             alt_allele,
-            symbol,
             hgnc_id,
-            allele,
-            p_hgvs,
+            gene_symbol,
             transcript,
+            allele,
             g_hgvs,
-            variant_key,
+            p_hgvs,
         }
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn new_from_parts(
-        assembly: String,
-        chromosome: String,
-        pos: u32,
-        reference: String,
-        alternate: String,
-        symbol: String,
-        hgnc_id: String,
-        hgvs: String,
-        transcript: String,
-        g_hgvs: String,
-    ) -> Self {
-        let vcf_var = VcfVar::new(chromosome, pos, reference, alternate);
-        Self::new(
-            assembly, vcf_var, symbol, hgnc_id, hgvs, None, transcript, g_hgvs,
-        )
     }
 
     pub fn assembly(&self) -> &str {
@@ -101,7 +74,7 @@ impl ValidatedHgvs {
         self.chr.as_ref()
     }
 
-    pub fn position(&self) -> u32 {
+    pub fn position(&self) -> u64 {
         self.position
     }
 
@@ -113,72 +86,68 @@ impl ValidatedHgvs {
         self.alt_allele.as_ref()
     }
 
-    pub fn symbol(&self) -> &str {
-        &self.symbol
-    }
-
     pub fn hgnc_id(&self) -> &str {
         self.hgnc_id.as_ref()
     }
 
-    pub fn hgvs(&self) -> &str {
-        self.allele.as_ref()
-    }
-
-    pub fn p_hgvs(&self) -> Option<String> {
-        self.p_hgvs.as_ref().map(|phgvs| phgvs.to_string())
+    pub fn gene_symbol(&self) -> &str {
+        &self.gene_symbol
     }
 
     pub fn transcript(&self) -> &str {
         self.transcript.as_ref()
     }
 
+    pub fn allele(&self) -> &str {
+        self.allele.as_ref()
+    }
+
     pub fn g_hgvs(&self) -> &str {
         self.g_hgvs.as_ref()
+    }
+
+    pub fn p_hgvs(&self) -> Option<String> {
+        self.p_hgvs.as_ref().map(|phgvs| phgvs.to_string())
     }
 
     pub fn is_x_chromosomal(&self) -> bool {
         self.chr.contains("X")
     }
 
-    pub fn validate_against_gene(&self, gene: &str) -> Result<(), PivotError> {
+    pub fn validate_against_gene(&self, gene: &str) -> Result<(), HGVSError> {
         let (expected, id_type) = if is_hgnc_id(gene) {
             (self.hgnc_id.as_str(), "HGNC ID")
         } else {
-            (self.symbol.as_str(), "gene symbol")
+            (self.gene_symbol.as_str(), "gene symbol")
         };
 
         if gene == expected {
             Ok(())
         } else {
-            Err(PivotError::IncorrectGeneData {
+            Err(HGVSError::MismatchingGeneData {
                 id_type: id_type.to_string(),
-                gene: gene.to_string(),
-                hgnc_id: self.hgnc_id.to_string(),
+                expected_gene: gene.to_string(),
+                hgvs: self.g_hgvs.to_string(),
+                hgvs_gene: self.hgnc_id.to_string(),
             })
         }
     }
 
-    /// Creates a VI from the ValidatedHGVS
+    /// Create Phenopacket VariantInterpretation from a ValidatedHgvs and an allele count.
     pub fn get_hgvs_variant_interpretation(&self, allele_count: usize) -> VariantInterpretation {
         let gene_ctxt = GeneDescriptor {
-            value_id: self.hgnc_id.to_string(),
-            symbol: self.symbol.to_string(),
-            description: String::default(),
-            alternate_ids: vec![],
-            alternate_symbols: vec![],
-            xrefs: vec![],
+            value_id: self.hgnc_id().to_string(),
+            symbol: self.gene_symbol().to_string(),
+            ..Default::default()
         };
         let vcf_record = VcfRecord {
-            genome_assembly: self.assembly.to_string(),
-            chrom: self.chr.to_string(),
-            pos: self.position as u64,
+            genome_assembly: self.assembly().to_string(),
+            chrom: self.chr().to_string(),
+            pos: self.position(),
             id: String::default(),
             r#ref: self.ref_allele.to_string(),
             alt: self.alt_allele.to_string(),
-            qual: String::default(),
-            filter: String::default(),
-            info: String::default(),
+            ..Default::default()
         };
 
         let hgvs_c = Expression {
@@ -203,7 +172,7 @@ impl ValidatedHgvs {
         };
         let allelic_state = get_allele_term(allele_count, self.is_x_chromosomal());
         let vdesc = VariationDescriptor {
-            id: self.variant_key.to_string(),
+            id: self.g_hgvs.to_string(), // I'm not entirely happy with this
             variation: None,
             label: String::default(),
             description: String::default(),

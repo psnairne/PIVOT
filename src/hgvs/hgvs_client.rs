@@ -2,7 +2,6 @@ use crate::hgvs::error::HGVSError;
 use crate::hgvs::json_schema::VariantValidatorResponse;
 use crate::hgvs::traits::HGVSData;
 use crate::hgvs::validated_hgvs::ValidatedHgvs;
-use crate::hgvs::vcf_var::VcfVar;
 use ratelimit::Ratelimiter;
 use reqwest::blocking::Client;
 use std::thread::sleep;
@@ -16,7 +15,6 @@ pub struct HGVSClient {
     client: Client,
     genome_assembly: String,
 }
-
 
 impl Default for HGVSClient {
     fn default() -> Self {
@@ -74,64 +72,76 @@ impl HGVSClient {
 }
 
 impl HGVSData for HGVSClient {
-    fn request_variant_data(&self, unvalidated_hgvs: &str) -> Result<ValidatedHgvs, HGVSError> {
+    fn request_and_validate_hgvs(&self, unvalidated_hgvs: &str) -> Result<ValidatedHgvs, HGVSError> {
         let (transcript, allele) = Self::get_transcript_and_allele(unvalidated_hgvs)?;
+
         let fetch_url = self.get_fetch_url(transcript, allele);
+
         let response = self.fetch_request(fetch_url.clone());
 
-/*        if let Some(flag) = response.get("flag")
-            && flag != "gene_variant"
-        {
-            return Err(HGVSError::TemporaryError);
-        }*/
+        if response.flag != "gene_variant" {
+            return Err(HGVSError::NonGeneVariant {
+                hgvs: unvalidated_hgvs.to_string(),
+                flag: response.flag.clone(),
+            });
+        }
 
-/*        let variant_key = response
-            .as_object()
-            .unwrap()
-            .keys()
-            .find(|&k| k != "flag" && k != "metadata")
-            .ok_or_else(|| HGVSError::TemporaryError)?;*/
+        let variant_info = response.variant_info[unvalidated_hgvs].clone();
 
-        let var = response.variant_info[unvalidated_hgvs].clone();
-
-        let hgnc = var
-            .gene_ids.hgnc_id;
-
-        let symbol = var.gene_symbol;
-
-        let hgvs_predicted_protein_consequence = var.hgvs_predicted_protein_consequence.tlr;
-
-        let assemblies = var.primary_assembly_loci;
+        let assemblies = variant_info.primary_assembly_loci;
 
         let assembly = assemblies
             .get(&self.genome_assembly)
-            .ok_or_else(|| HGVSError::TemporaryError)?;
+            .ok_or_else(|| HGVSError::GenomeAssemblyNotFound {
+                hgvs: unvalidated_hgvs.to_string(),
+                desired_assembly: self.genome_assembly.clone(),
+                found_assemblies: assemblies.keys().cloned().collect::<Vec<String>>(),
+            })?
+            .clone();
 
-        let hgvs_transcript_var = var.hgvs_transcript_variant;
-        let transcript = hgvs_transcript_var.split(':').next().unwrap_or("");
+        let chr = assembly.vcf.chr;
+        let position_string = assembly.vcf.pos;
+        let position = position_string.parse::<u64>().map_err(|_| {
+            HGVSError::InvalidVariantValidatorResponseElement {
+                hgvs: unvalidated_hgvs.to_string(),
+                element: position_string,
+                problem: "position should be parseable to u32".to_string(),
+            }
+        })?;
+        let ref_allele = assembly.vcf.reference;
+        let alt_allele = assembly.vcf.alt;
 
-        let genomic_hgvs = assembly.hgvs_genomic_description.clone();
+        let gene_symbol = variant_info.gene_symbol;
+        let hgnc_id = variant_info.gene_ids.hgnc_id;
+        
+        let blah = variant_info.hgvs_transcript_variant
 
-        let vcf = assembly.vcf.clone();
-        let chrom = vcf.chr;
+        let hgvs_predicted_protein_consequence = if variant_info
+            .hgvs_predicted_protein_consequence
+            .tlr
+            .is_empty()
+        {
+            None
+        } else {
+            Some(variant_info.hgvs_predicted_protein_consequence.tlr)
+        };
 
-        let position: u32 = vcf.pos
-            .parse()
-            .map_err(|_| HGVSError::TemporaryError)?;
-        let reference = vcf.reference;
-        let alternate = vcf.alt;
-        let vcf_var = VcfVar::new(chrom, position, reference, alternate);
-        let hgvs_v = ValidatedHgvs::new(
+        let genomic_hgvs = assembly.hgvs_genomic_description;
+
+        let validated_hgvs = ValidatedHgvs::new(
             self.genome_assembly.clone(),
-            vcf_var,
-            symbol,
-            hgnc,
-            allele.to_string(),
-            Some(hgvs_predicted_protein_consequence),
+            chr,
+            position,
+            ref_allele,
+            alt_allele,
+            hgnc_id,
+            gene_symbol,
             transcript.to_string(),
+            allele.to_string(),
             genomic_hgvs,
+            hgvs_predicted_protein_consequence,
         );
-        Ok(hgvs_v)
+        Ok(validated_hgvs)
     }
 }
 
@@ -163,6 +173,6 @@ mod tests {
         let hgvs = "NM_001173464.1:c.2860C>T";
         let client = HGVSClient::default();
 
-        client.request_variant_data(hgvs).unwrap();
+        client.request_and_validate_hgvs(hgvs).unwrap();
     }
 }
