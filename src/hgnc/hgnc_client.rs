@@ -15,16 +15,11 @@ pub struct HGNCClient {
 }
 
 impl HGNCClient {
-    pub fn new(api_url: String) -> Self {
-        let rate_limiter = Ratelimiter::builder(10, Duration::from_secs(1))
-            .max_tokens(10)
-            .build()
-            .expect("Building rate limiter failed");
-
+    pub fn new(rate_limiter: Ratelimiter, api_url: String, client: Client) -> Self {
         HGNCClient {
             rate_limiter,
             api_url,
-            client: Client::new(),
+            client,
         }
     }
 

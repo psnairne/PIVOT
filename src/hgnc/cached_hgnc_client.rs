@@ -14,6 +14,8 @@ use crate::hgnc::hgnc_client::HGNCClient;
 use crate::hgnc::json_schema::{GeneDoc, GeneResponse};
 use crate::hgnc::traits::HGNCData;
 use directories::ProjectDirs;
+use ratelimit::Ratelimiter;
+use reqwest::blocking::Client;
 
 const TABLE: TableDefinition<&str, GeneDoc> = TableDefinition::new("hgnc_request_cache");
 
@@ -74,7 +76,7 @@ impl HGNCData for CachedHGNCClient {
         }
 
         let doc = self.hgnc_client.request_gene_data(query)?;
-        CachedHGNCClient::cache_documents(&doc, &cache)?;
+        CachedHGNCClient::cache_gene_doc(&doc, &cache)?;
         Ok(doc.clone())
     }
 
@@ -126,11 +128,14 @@ impl HGNCData for CachedHGNCClient {
 }
 
 impl CachedHGNCClient {
-    pub fn new(cache_file_path: PathBuf, api_url: String) -> Result<Self, HGNCError> {
+    pub fn new(
+        cache_file_path: PathBuf,
+        hgnc_client: HGNCClient,
+    ) -> Result<Self, HGNCError> {
         Self::init_cache(&cache_file_path)?;
         Ok(CachedHGNCClient {
             cache_file_path,
-            hgnc_client: HGNCClient::new(api_url),
+            hgnc_client,
         })
     }
 
@@ -145,7 +150,7 @@ impl CachedHGNCClient {
         None
     }
 
-    pub(super) fn cache_documents(doc: &GeneDoc, cache: &Database) -> Result<(), HGNCError> {
+    pub(super) fn cache_gene_doc(doc: &GeneDoc, cache: &Database) -> Result<(), HGNCError> {
         let cache_writer = cache.begin_write()?;
         {
             if let Some(symbol) = &doc.symbol {
@@ -204,7 +209,7 @@ impl Default for CachedHGNCClient {
     fn default() -> Self {
         let cache_dir = Self::default_cache_dir().expect("Could not find default cache dir.");
 
-        CachedHGNCClient::new(cache_dir, "https://rest.genenames.org/".to_string())
+        CachedHGNCClient::new(cache_dir, HGNCClient::default())
             .expect("Failure when creating HGNC client.")
     }
 }
@@ -236,7 +241,7 @@ mod tests {
         let cache_file_path = temp_dir.path().join("cache.hgnc");
         let client = CachedHGNCClient::new(
             cache_file_path.clone(),
-            "https://rest.genenames.org/".to_string(),
+            HGNCClient::default(),
         )
         .unwrap();
 
@@ -265,7 +270,7 @@ mod tests {
         let cache_file_path = temp_dir.path().join("cache.hgnc");
         let client = CachedHGNCClient::new(
             cache_file_path.clone(),
-            "https://rest.genenames.org/".to_string(),
+            HGNCClient::default(),
         )
         .unwrap();
         let client = client

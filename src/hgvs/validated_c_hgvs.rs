@@ -1,6 +1,5 @@
 use crate::hgvs::error::HGVSError;
 use crate::utils::{get_allele_term, is_hgnc_id};
-use phenopackets::ga4gh::vrs::v1::feature::Feature::Gene;
 use phenopackets::ga4gh::vrsatile::v1::{
     Expression, GeneDescriptor, MoleculeContext, VariationDescriptor, VcfRecord,
 };
@@ -11,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ValidatedHgvs {
+pub struct ValidatedCHgvs {
     /// Genome build, e.g., hg38
     assembly: String,
     /// Chromosome, e.g., "17"
@@ -30,13 +29,15 @@ pub struct ValidatedHgvs {
     transcript: String,
     /// HGVS Nomenclature, e.g., c.8242G>T
     allele: String,
+    /// Coding HGVS nomenclature, e.g., NM_000138.5:c.8242G>T
+    c_hgvs: String,
     /// Genomic HGVS nomenclature, e.g., NC_000015.10:g.48411364C>A
     g_hgvs: String,
     /// Protein level HGVS, if available
     p_hgvs: Option<String>,
 }
 
-impl ValidatedHgvs {
+impl ValidatedCHgvs {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         assembly: String,
@@ -48,10 +49,11 @@ impl ValidatedHgvs {
         gene_symbol: String,
         transcript: String,
         allele: String,
+        c_hgvs: String,
         g_hgvs: String,
         p_hgvs: Option<String>,
     ) -> Self {
-        ValidatedHgvs {
+        ValidatedCHgvs {
             assembly,
             chr,
             position,
@@ -61,6 +63,7 @@ impl ValidatedHgvs {
             gene_symbol,
             transcript,
             allele,
+            c_hgvs,
             g_hgvs,
             p_hgvs,
         }
@@ -100,6 +103,10 @@ impl ValidatedHgvs {
 
     pub fn allele(&self) -> &str {
         self.allele.as_ref()
+    }
+
+    pub fn c_hgvs(&self) -> &str {
+        self.c_hgvs.as_ref()
     }
 
     pub fn g_hgvs(&self) -> &str {
@@ -142,9 +149,8 @@ impl ValidatedHgvs {
         };
 
         let hgvs_c = Expression {
-            // NOTE: EVERYTHING IS CURRENTLY CODED AS IF THE ORIGINAL UNVALIDATED HGVS is HGVS.C!
             syntax: "hgvs.c".to_string(),
-            value: format!("{}:{}", self.transcript(), self.allele()),
+            value: self.c_hgvs().to_string(),
             version: String::default(),
         };
         let hgvs_g = Expression {

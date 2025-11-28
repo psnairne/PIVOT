@@ -1,18 +1,19 @@
+use redb::{CommitError, DatabaseError, StorageError, TableError, TransactionError};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum HGVSError {
-    #[error("Problem {problem} in found HGVS: {hgvs} ")]
-    IncorrectHGVSFormat { hgvs: String, problem: String },
+    #[error("Problem {problem} in found HGVS: {c_hgvs} ")]
+    IncorrectCHGVSFormat { c_hgvs: String, problem: String },
     #[error(
-        "VariantValidator response for {hgvs} did not have flag gene_variant. The flag was {flag} instead. "
+        "VariantValidator response for {c_hgvs} did not have flag gene_variant. The flag was {flag} instead. "
     )]
-    NonGeneVariant { hgvs: String, flag: String },
+    NonGeneVariant { c_hgvs: String, flag: String },
     #[error(
-        "VariantValidator response for {hgvs} did not have genome_assembly {desired_assembly}. The following assemblies were found instead: {found_assemblies:?}"
+        "VariantValidator response for {c_hgvs} did not have genome_assembly {desired_assembly}. The following assemblies were found instead: {found_assemblies:?}"
     )]
     GenomeAssemblyNotFound {
-        hgvs: String,
+        c_hgvs: String,
         desired_assembly: String,
         found_assemblies: Vec<String>,
     },
@@ -26,11 +27,21 @@ pub enum HGVSError {
         hgvs_gene: String,
     },
     #[error(
-        "VariantValidator response for {hgvs} has element {element} with following problem: {problem}"
+        "VariantValidator response for {c_hgvs} has element {element} with following problem: {problem}"
     )]
     InvalidVariantValidatorResponseElement {
-        hgvs: String,
+        c_hgvs: String,
         element: String,
         problem: String,
     },
+    #[error(transparent)]
+    CacheDatabase(#[from] DatabaseError),
+    #[error(transparent)]
+    CacheTransaction(#[from] TransactionError),
+    #[error(transparent)]
+    CacheCommit(#[from] CommitError),
+    #[error(transparent)]
+    CacheTable(#[from] TableError),
+    #[error(transparent)]
+    CacheStorage(#[from] StorageError),
 }
