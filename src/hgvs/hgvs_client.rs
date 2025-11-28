@@ -8,17 +8,26 @@ use crate::hgnc::json_schema::{GeneDoc, GeneResponse};
 use crate::hgvs::error::HGVSError;
 use crate::hgvs::traits::HGVSData;
 use crate::hgvs::validated_hgvs::ValidatedHgvs;
+use crate::hgvs::vcf_var::VcfVar;
 
-pub fn hg38() -> Self {
-    Self {
-        genome_assembly: GENOME_ASSEMBLY_HG38.to_string(),
-    }
+const GENOME_ASSEMBLY_HG38: &str = "hg38";
+
+pub struct HgvsVariantValidator {
+    genome_assembly: String,
+}
+
+fn get_variant_validator_url(genome_assembly: &str, transcript: &str, allele: &str) -> String {
+    let api_url = format!(
+        "https://rest.variantvalidator.org/VariantValidator/variantvalidator/{genome_assembly}/{transcript}%3A{allele}/{transcript}?content-type=application%2Fjson",
+    );
+    api_url
 }
 
 pub struct HGVSClient {
     rate_limiter: Ratelimiter,
     api_url: String,
     client: Client,
+    genome_assembly: String,
 }
 
 impl HGVSClient {
@@ -32,6 +41,7 @@ impl HGVSClient {
             rate_limiter,
             api_url,
             client: Client::new(),
+            genome_assembly: GENOME_ASSEMBLY_HG38.to_string(),
         }
     }
 
@@ -156,5 +166,11 @@ impl HGVSData for HGVSClient {
             genomic_hgvs,
         );
         Ok(hgvs_v)
+    }
+}
+
+impl HGVSClient {
+    fn get_transcript_and_allele(unvalidated_hgvs: &str) -> (&str, &str) {
+        
     }
 }
