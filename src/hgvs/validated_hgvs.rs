@@ -145,8 +145,8 @@ impl ValidatedHgvs {
             chrom: self.chr().to_string(),
             pos: self.position(),
             id: String::default(),
-            r#ref: self.ref_allele.to_string(),
-            alt: self.alt_allele.to_string(),
+            r#ref: self.ref_allele().to_string(),
+            alt: self.alt_allele().to_string(),
             ..Default::default()
         };
 
