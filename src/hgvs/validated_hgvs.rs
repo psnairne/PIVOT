@@ -1,4 +1,5 @@
 use crate::error::PivotError;
+use crate::hgvs::vcf_var::VcfVar;
 use crate::utils::{get_allele_term, is_hgnc_id};
 use phenopackets::ga4gh::vrsatile::v1::{
     Expression, GeneDescriptor, MoleculeContext, VariationDescriptor, VcfRecord,
@@ -7,7 +8,6 @@ use phenopackets::schema::v2::core::{
     AcmgPathogenicityClassification, TherapeuticActionability, VariantInterpretation,
 };
 use serde::{Deserialize, Serialize};
-use crate::hgvs::vcf_var::VcfVar;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -56,7 +56,7 @@ impl ValidatedHgvs {
         let position = vcf_var.pos();
         let ref_allele = vcf_var.ref_allele();
         let alt_allele = vcf_var.alt_allele();
-        let variant_key = UnvalidatedHgvs::generate_variant_key(&transcript, &allele);
+        let variant_key = "abc".to_string();
 
         ValidatedHgvs {
             assembly,
