@@ -100,12 +100,26 @@ impl GeneDoc {
         Self::default()
     }
 
-    pub fn hgnc_id(mut self, hgnc_id: impl Into<String>) -> Self {
+    pub fn hgnc_id(&self) -> Option<&str> {
+        match &self.hgnc_id {
+            Some(hgnc_id) => Some(hgnc_id.as_str()),
+            None => None,
+        }
+    }
+
+    pub fn symbol(&self) -> Option<&str> {
+        match &self.symbol {
+            Some(symbol) => Some(symbol.as_str()),
+            None => None,
+        }
+    }
+
+    pub fn change_hgnc_id(mut self, hgnc_id: impl Into<String>) -> Self {
         self.hgnc_id = Some(hgnc_id.into());
         self
     }
 
-    pub fn symbol(mut self, symbol: impl Into<String>) -> Self {
+    pub fn change_symbol(mut self, symbol: impl Into<String>) -> Self {
         self.symbol = Some(symbol.into());
         self
     }

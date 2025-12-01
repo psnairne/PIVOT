@@ -1,16 +1,17 @@
+use crate::hgnc::error::HGNCError;
+use crate::hgnc::json_schema::GeneDoc;
 use crate::hgvs::validated_c_hgvs::ValidatedCHgvs;
+use directories::ProjectDirs;
 use redb::{
     Database as RedbDatabase, Database, DatabaseError, ReadableDatabase, TableDefinition, TypeName,
     Value,
 };
 use std::any::type_name;
+use std::borrow::Borrow;
 use std::env::home_dir;
 use std::fs;
+use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
-use directories::ProjectDirs;
-use crate::hgnc::enums::GeneQuery;
-use crate::hgnc::error::HGNCError;
-use crate::hgnc::json_schema::GeneDoc;
 
 macro_rules! implement_value_for_local_type {
     ($type_name:ty) => {
@@ -44,20 +45,49 @@ macro_rules! implement_value_for_local_type {
 implement_value_for_local_type!(ValidatedCHgvs);
 implement_value_for_local_type!(GeneDoc);
 
-pub struct Cacher<T: Value> {
-    cache_file_path: PathBuf,
-    type_to_cache: T,
+trait Cacheable: Sized + Clone + Value + 'static
+where
+    for<'a> Self: From<Self::SelfType<'a>>, // required so that cache_entry.value().into() works
+    for<'a> Self: Borrow<Self::SelfType<'a>>, // table.insert from redb requires this
+{
+    fn keys(&self) -> Vec<&str>;
+
+    fn table_definition() -> TableDefinition<'static, &'static str, Self> {
+        TableDefinition::new(type_name::<Self>())
+    }
 }
 
-impl<T: Value> Cacher<T> {
+impl Cacheable for ValidatedCHgvs {
+    fn keys(&self) -> Vec<&str> {
+        vec![self.c_hgvs()]
+    }
+}
 
+impl Cacheable for GeneDoc {
+    fn keys(&self) -> Vec<&str> {
+        let mut keys = Vec::new();
+        if let Some(hgnc_id) = self.hgnc_id() {
+            keys.push(hgnc_id);
+        }
+        if let Some(symbol) = self.symbol() {
+            keys.push(symbol);
+        }
+        keys
+    }
+}
+
+pub struct Cacher<T: Cacheable> {
+    cache_file_path: PathBuf,
+    _phantom: PhantomData<T>,
+}
+
+impl<T: Cacheable> Cacher<T> {
     fn init_cache(cache_dir: &Path) -> Result<(), HGNCError> {
         let cache = RedbDatabase::create(cache_dir)?;
-        let table: TableDefinition<&str, T> = TableDefinition::new();
 
         let write_txn = cache.begin_write()?;
         {
-            write_txn.open_table(crate::hgnc::cached_hgnc_client::TABLE)?;
+            write_txn.open_table(T::table_definition())?;
         }
         write_txn.commit()?;
         Ok(())
@@ -78,7 +108,7 @@ impl<T: Value> Cacher<T> {
             fs::create_dir_all(&phenox_cache_dir).ok()?;
         }
 
-        Some(phenox_cache_dir.join("hgnc_cache"))
+        Some(phenox_cache_dir.join(type_name::<T>()))
     }
 
     pub fn with_cache_dir(mut self, cache_dir: PathBuf) -> Result<Self, HGNCError> {
@@ -90,32 +120,47 @@ impl<T: Value> Cacher<T> {
     fn open_cache(&self) -> Result<RedbDatabase, DatabaseError> {
         RedbDatabase::open(&self.cache_file_path)
     }
-    pub(super) fn find_cache_entry(query: &GeneQuery, cache: &Database) -> Option<GeneDoc> {
+    pub(super) fn find_cache_entry(query: &str, cache: &Database) -> Option<T> {
         let cache_reader = cache.begin_read().ok()?;
-        let table = cache_reader.open_table(crate::hgnc::cached_hgnc_client::TABLE).ok()?;
+        let table = cache_reader.open_table(T::table_definition()).ok()?;
 
-        if let Ok(Some(cache_entry)) = table.get(query.inner()) {
-            return Some(cache_entry.value());
+        if let Ok(Some(cache_entry)) = table.get(query) {
+            return Some(cache_entry.value().into());
         }
 
         None
     }
 
-    pub(super) fn cache_object(doc: &GeneDoc, cache: &Database) -> Result<(), HGNCError> {
+    pub(super) fn cache_object(object_to_cache: T, cache: &Database) -> Result<(), HGNCError> {
         let cache_writer = cache.begin_write()?;
         {
-            if let Some(symbol) = &doc.symbol {
-                let mut table = cache_writer.open_table(crate::hgnc::cached_hgnc_client::TABLE)?;
-                table.insert(symbol.as_str(), doc.clone())?;
-            }
-
-            if let Some(hgnc_id) = &doc.hgnc_id {
-                let mut table = cache_writer.open_table(crate::hgnc::cached_hgnc_client::TABLE)?;
-                table.insert(hgnc_id.as_str(), doc.clone())?;
+            let mut table = cache_writer.open_table(T::table_definition())?;
+            for key in object_to_cache.keys() {
+                table.insert(key, object_to_cache.clone())?;
             }
         }
         cache_writer.commit()?;
         Ok(())
     }
+}
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::{fixture, rstest};
+    use tempfile::TempDir;
+
+    #[fixture]
+    fn temp_dir() -> TempDir {
+        tempfile::tempdir().expect("Failed to create temporary directory")
+    }
+
+    #[rstest]
+    fn test(temp_dir: TempDir) {
+        /*let cache_file_path = temp_dir.path().join("cache.hgnc");
+        let hgvs_cacher = Cacher {
+            cache_file_path,
+            type_to_cache,
+        };*/
+    }
 }

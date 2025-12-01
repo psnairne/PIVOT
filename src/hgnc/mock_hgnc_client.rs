@@ -79,42 +79,58 @@ impl Default for MockHGNClient {
         let mut docs = HashMap::new();
         docs.insert(
             "BRCA1".to_string(),
-            GeneDoc::default().hgnc_id("HGNC:1100").symbol("BRCA1"),
+            GeneDoc::default()
+                .change_hgnc_id("HGNC:1100")
+                .change_symbol("BRCA1"),
         );
 
         docs.insert(
             "HGNC:1100".to_string(),
-            GeneDoc::default().hgnc_id("HGNC:1100").symbol("BRCA1"),
+            GeneDoc::default()
+                .change_hgnc_id("HGNC:1100")
+                .change_symbol("BRCA1"),
         );
 
         docs.insert(
             "HGNC:2082".to_string(),
-            GeneDoc::default().hgnc_id("HGNC:2082").symbol("CLOCK"),
+            GeneDoc::default()
+                .change_hgnc_id("HGNC:2082")
+                .change_symbol("CLOCK"),
         );
 
         docs.insert(
             "CLOCK".to_string(),
-            GeneDoc::default().hgnc_id("HGNC:2082").symbol("CLOCK"),
+            GeneDoc::default()
+                .change_hgnc_id("HGNC:2082")
+                .change_symbol("CLOCK"),
         );
 
         docs.insert(
             "HGNC:10848".to_string(),
-            GeneDoc::default().hgnc_id("HGNC:10848").symbol("SHH"),
+            GeneDoc::default()
+                .change_hgnc_id("HGNC:10848")
+                .change_symbol("SHH"),
         );
 
         docs.insert(
             "SHH".to_string(),
-            GeneDoc::default().hgnc_id("HGNC:10848").symbol("SHH"),
+            GeneDoc::default()
+                .change_hgnc_id("HGNC:10848")
+                .change_symbol("SHH"),
         );
 
         docs.insert(
             "HGNC:11251".to_string(),
-            GeneDoc::default().hgnc_id("HGNC:11251").symbol("SPOCK1"),
+            GeneDoc::default()
+                .change_hgnc_id("HGNC:11251")
+                .change_symbol("SPOCK1"),
         );
 
         docs.insert(
             "SPOCK1".to_string(),
-            GeneDoc::default().hgnc_id("HGNC:11251").symbol("SPOCK1"),
+            GeneDoc::default()
+                .change_hgnc_id("HGNC:11251")
+                .change_symbol("SPOCK1"),
         );
 
         MockHGNClient::new(docs)
@@ -131,17 +147,21 @@ mod tests {
 
         docs.insert(
             "BRCA1".to_string(),
-            GeneDoc::default().hgnc_id("HGNC:1100").symbol("BRCA1"),
+            GeneDoc::default()
+                .change_hgnc_id("HGNC:1100")
+                .change_symbol("BRCA1"),
         );
 
         docs.insert(
             "HGNC:1100".to_string(),
-            GeneDoc::default().hgnc_id("HGNC:1100").symbol("BRCA1"),
+            GeneDoc::default()
+                .change_hgnc_id("HGNC:1100")
+                .change_symbol("BRCA1"),
         );
 
         docs.insert(
             "NO_SYMBOL_DATA".to_string(),
-            GeneDoc::default().hgnc_id("HGNC:9999"),
+            GeneDoc::default().change_hgnc_id("HGNC:9999"),
         );
 
         MockHGNClient::new(docs)
