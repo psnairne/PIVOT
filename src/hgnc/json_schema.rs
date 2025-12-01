@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::hgnc::error::HGNCError;
 use std::fmt::Debug;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -34,7 +35,7 @@ pub struct GeneDoc {
     #[serde(default)]
     pub orphanet: Option<i64>,
     #[serde(default)]
-    pub hgnc_id: Option<String>,
+    pub hgnc_id: String,
     #[serde(default)]
     pub pubmed_id: Vec<i64>,
     #[serde(default)]
@@ -92,7 +93,7 @@ pub struct GeneDoc {
     #[serde(default)]
     pub vega_id: Option<String>,
     #[serde(default)]
-    pub symbol: Option<String>,
+    pub symbol: String,
 }
 
 impl GeneDoc {
@@ -100,27 +101,33 @@ impl GeneDoc {
         Self::default()
     }
 
-    pub fn hgnc_id(&self) -> Option<&str> {
-        match &self.hgnc_id {
-            Some(hgnc_id) => Some(hgnc_id.as_str()),
-            None => None,
-        }
+    pub fn hgnc_id_owned(&self) -> String {
+        self.hgnc_id.clone()
     }
 
-    pub fn symbol(&self) -> Option<&str> {
-        match &self.symbol {
-            Some(symbol) => Some(symbol.as_str()),
-            None => None,
-        }
+    pub fn hgnc_id(&self) -> &str {
+        self.hgnc_id.as_str()
+    }
+
+    pub fn symbol_owned(&self) -> String {
+        self.symbol.clone()
+    }
+
+    pub fn symbol(&self) -> &str {
+        self.symbol.as_str()
+    }
+
+    pub fn symbol_id_pair(&self) -> (String, String) {
+        (self.symbol_owned(), self.hgnc_id_owned())
     }
 
     pub fn change_hgnc_id(mut self, hgnc_id: impl Into<String>) -> Self {
-        self.hgnc_id = Some(hgnc_id.into());
+        self.hgnc_id = hgnc_id.into();
         self
     }
 
     pub fn change_symbol(mut self, symbol: impl Into<String>) -> Self {
-        self.symbol = Some(symbol.into());
+        self.symbol = symbol.into();
         self
     }
 }

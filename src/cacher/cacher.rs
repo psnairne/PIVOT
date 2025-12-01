@@ -1,3 +1,4 @@
+use crate::cacher::error::CacherError;
 use crate::hgnc::error::HGNCError;
 use crate::hgnc::json_schema::GeneDoc;
 use crate::hgvs::validated_c_hgvs::ValidatedCHgvs;
@@ -23,8 +24,7 @@ macro_rules! implement_value_for_local_type {
                 None
             }
 
-            fn from_bytes<'a>(data: &[u8]) -> Self::SelfType<'a>
-            {
+            fn from_bytes<'a>(data: &[u8]) -> Self::SelfType<'a> {
                 serde_json::from_slice(data).expect("Could not convert to bytes.")
             }
 
@@ -45,10 +45,10 @@ macro_rules! implement_value_for_local_type {
 implement_value_for_local_type!(ValidatedCHgvs);
 implement_value_for_local_type!(GeneDoc);
 
-trait Cacheable: Sized + Clone + Value + 'static
+pub trait Cacheable: Sized + Clone + Value + 'static
 where
     for<'a> Self: From<Self::SelfType<'a>>, // required so that cache_entry.value().into() works
-    for<'a> Self: Borrow<Self::SelfType<'a>>, // table.insert from redb requires this
+    for<'a> Self: Borrow<Self::SelfType<'a>>,
 {
     fn keys(&self) -> Vec<&str>;
 
@@ -65,14 +65,7 @@ impl Cacheable for ValidatedCHgvs {
 
 impl Cacheable for GeneDoc {
     fn keys(&self) -> Vec<&str> {
-        let mut keys = Vec::new();
-        if let Some(hgnc_id) = self.hgnc_id() {
-            keys.push(hgnc_id);
-        }
-        if let Some(symbol) = self.symbol() {
-            keys.push(symbol);
-        }
-        keys
+        vec![self.symbol(), self.hgnc_id()]
     }
 }
 
@@ -81,9 +74,38 @@ pub struct Cacher<T: Cacheable> {
     _phantom: PhantomData<T>,
 }
 
+impl<T: Cacheable> Default for Cacher<T> {
+    fn default() -> Self {
+        let pkg_name = env!("CARGO_PKG_NAME");
+
+        let phenox_cache_dir = ProjectDirs::from("", "", pkg_name)
+            .map(|project_dir| project_dir.cache_dir().to_path_buf())
+            .or_else(|| home_dir().map(|home| home.join(pkg_name)))
+            .unwrap_or_else(|| panic!("Could not find cache directory or home directory."));
+
+        if !phenox_cache_dir.exists() {
+            fs::create_dir_all(&phenox_cache_dir)
+                .expect("Failed to create default cache directory.");
+        }
+
+        Cacher::new(phenox_cache_dir.join(type_name::<T>()))
+    }
+}
+
 impl<T: Cacheable> Cacher<T> {
-    fn init_cache(cache_dir: &Path) -> Result<(), HGNCError> {
-        let cache = RedbDatabase::create(cache_dir)?;
+    pub fn new(cache_file_path: PathBuf) -> Self {
+        Cacher {
+            cache_file_path,
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn cache_file_path(&self) -> &PathBuf {
+        &self.cache_file_path
+    }
+
+    pub fn init_cache(&self) -> Result<(), CacherError> {
+        let cache = RedbDatabase::create(self.cache_file_path.clone())?;
 
         let write_txn = cache.begin_write()?;
         {
@@ -93,34 +115,16 @@ impl<T: Cacheable> Cacher<T> {
         Ok(())
     }
 
-    pub fn default_cache_dir() -> Option<PathBuf> {
-        let pkg_name = env!("CARGO_PKG_NAME");
-
-        let phenox_cache_dir = if let Some(project_dir) = ProjectDirs::from("", "", pkg_name) {
-            project_dir.cache_dir().to_path_buf()
-        } else if let Some(home_dir) = home_dir() {
-            home_dir.join(pkg_name)
-        } else {
-            return None;
-        };
-
-        if !phenox_cache_dir.exists() {
-            fs::create_dir_all(&phenox_cache_dir).ok()?;
-        }
-
-        Some(phenox_cache_dir.join(type_name::<T>()))
-    }
-
     pub fn with_cache_dir(mut self, cache_dir: PathBuf) -> Result<Self, HGNCError> {
-        Self::init_cache(&cache_dir)?;
         self.cache_file_path = cache_dir.clone();
+        self.init_cache()?;
         Ok(self)
     }
 
-    fn open_cache(&self) -> Result<RedbDatabase, DatabaseError> {
+    pub fn open_cache(&self) -> Result<RedbDatabase, DatabaseError> {
         RedbDatabase::open(&self.cache_file_path)
     }
-    pub(super) fn find_cache_entry(query: &str, cache: &Database) -> Option<T> {
+    pub fn find_cache_entry(&self, query: &str, cache: &Database) -> Option<T> {
         let cache_reader = cache.begin_read().ok()?;
         let table = cache_reader.open_table(T::table_definition()).ok()?;
 
@@ -131,7 +135,7 @@ impl<T: Cacheable> Cacher<T> {
         None
     }
 
-    pub(super) fn cache_object(object_to_cache: T, cache: &Database) -> Result<(), HGNCError> {
+    pub fn cache_object(&self, object_to_cache: T, cache: &Database) -> Result<(), HGNCError> {
         let cache_writer = cache.begin_write()?;
         {
             let mut table = cache_writer.open_table(T::table_definition())?;
@@ -157,10 +161,10 @@ mod tests {
 
     #[rstest]
     fn test(temp_dir: TempDir) {
-        /*let cache_file_path = temp_dir.path().join("cache.hgnc");
+        let cache_file_path = temp_dir.path().join("cache.hgnc");
         let hgvs_cacher = Cacher {
-            cache_file_path,
-            type_to_cache,
-        };*/
+            cache_file_path: cache_file_path,
+            _phantom: PhantomData::<ValidatedCHgvs>,
+        };
     }
 }

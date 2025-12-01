@@ -31,47 +31,6 @@ impl HGNCData for MockHGNClient {
                 n_expected: 1,
             })
     }
-
-    fn request_hgnc_id(&self, symbol: &str) -> Result<String, HGNCError> {
-        let doc = self.request_gene_data(GeneQuery::Symbol(symbol))?;
-        doc.hgnc_id.ok_or(HGNCError::UnexpectedNumberOfDocuments {
-            identifier: symbol.to_string(),
-            n_found: 0,
-            n_expected: 1,
-        })
-    }
-
-    fn request_gene_symbol(&self, hgnc_id: &str) -> Result<String, HGNCError> {
-        let doc = self.request_gene_data(GeneQuery::HgncId(hgnc_id))?;
-        doc.symbol.ok_or(HGNCError::UnexpectedNumberOfDocuments {
-            identifier: hgnc_id.to_string(),
-            n_found: 0,
-            n_expected: 1,
-        })
-    }
-
-    fn request_gene_identifier_pair(
-        &self,
-        query: GeneQuery,
-    ) -> Result<(String, String), HGNCError> {
-        let identifier_string = query.inner().to_string();
-
-        let doc = self.request_gene_data(query)?;
-
-        let hgnc_id = doc.hgnc_id.ok_or(HGNCError::UnexpectedNumberOfDocuments {
-            identifier: identifier_string.clone(),
-            n_found: 0,
-            n_expected: 1,
-        })?;
-
-        let symbol = doc.symbol.ok_or(HGNCError::UnexpectedNumberOfDocuments {
-            identifier: identifier_string,
-            n_found: 0,
-            n_expected: 1,
-        })?;
-
-        Ok((hgnc_id, symbol))
-    }
 }
 
 impl Default for MockHGNClient {
@@ -176,7 +135,7 @@ mod tests {
         assert!(result.is_ok());
 
         let doc = result.unwrap();
-        assert_eq!(doc.symbol, Some("BRCA1".to_string()));
+        assert_eq!(doc.symbol, "BRCA1".to_string());
     }
 
     #[test]
