@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Formatter};
 
-use crate::cacher::cacher::Cacher;
+use crate::cache_structs_and_traits::cacher::Cacher;
 use crate::hgnc::enums::GeneQuery;
 use crate::hgnc::error::HGNCError;
 use crate::hgnc::hgnc_client::HGNCClient;
@@ -49,10 +49,10 @@ impl Debug for CachedHGNCClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cacher::cacher::Cacheable;
+    use crate::cache_structs_and_traits::cacher::Cacheable;
+    use redb::{Database as RedbDatabase, ReadableDatabase};
     use rstest::{fixture, rstest};
     use tempfile::TempDir;
-    use redb::Database as RedbDatabase;
 
     #[fixture]
     fn temp_dir() -> TempDir {

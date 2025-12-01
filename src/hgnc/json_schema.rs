@@ -1,6 +1,4 @@
 use serde::{Deserialize, Serialize};
-
-use crate::hgnc::error::HGNCError;
 use std::fmt::Debug;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -1,4 +1,4 @@
-use crate::cacher::error::CacherError;
+use crate::cache_structs_and_traits::error::CacherError;
 use redb::{CommitError, DatabaseError, StorageError, TableError, TransactionError};
 use thiserror::Error;
 
@@ -17,7 +17,7 @@ pub enum HGNCError {
     #[error("Cant establish caching dir {0}")]
     CannotEstablishCacheDir(String),
     #[error(transparent)]
-    DefaultCache(#[from] CacherError),
+    CacherError(#[from] CacherError),
     #[error(transparent)]
     CacheCommit(#[from] CommitError),
     #[error(transparent)]

@@ -1,3 +1,4 @@
+use crate::cache_structs_and_traits::error::CacherError;
 use redb::{CommitError, DatabaseError, StorageError, TableError, TransactionError};
 use thiserror::Error;
 
@@ -44,4 +45,6 @@ pub enum HGVSError {
     CacheTable(#[from] TableError),
     #[error(transparent)]
     CacheStorage(#[from] StorageError),
+    #[error(transparent)]
+    CacherError(#[from] CacherError),
 }

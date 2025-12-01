@@ -1,5 +1,4 @@
-use crate::cacher::error::CacherError;
-use crate::hgnc::error::HGNCError;
+use crate::cache_structs_and_traits::error::CacherError;
 use crate::hgnc::json_schema::GeneDoc;
 use crate::hgvs::validated_c_hgvs::ValidatedCHgvs;
 use directories::ProjectDirs;
@@ -12,7 +11,7 @@ use std::borrow::Borrow;
 use std::env::home_dir;
 use std::fs;
 use std::marker::PhantomData;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 macro_rules! implement_value_for_local_type {
     ($type_name:ty) => {
@@ -115,7 +114,7 @@ impl<T: Cacheable> Cacher<T> {
         Ok(())
     }
 
-    pub fn with_cache_dir(mut self, cache_dir: PathBuf) -> Result<Self, HGNCError> {
+    pub fn with_cache_dir(mut self, cache_dir: PathBuf) -> Result<Self, CacherError> {
         self.cache_file_path = cache_dir.clone();
         self.init_cache()?;
         Ok(self)
@@ -135,7 +134,7 @@ impl<T: Cacheable> Cacher<T> {
         None
     }
 
-    pub fn cache_object(&self, object_to_cache: T, cache: &Database) -> Result<(), HGNCError> {
+    pub fn cache_object(&self, object_to_cache: T, cache: &Database) -> Result<(), CacherError> {
         let cache_writer = cache.begin_write()?;
         {
             let mut table = cache_writer.open_table(T::table_definition())?;
