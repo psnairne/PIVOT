@@ -1,3 +1,4 @@
+mod cacher;
 pub mod hgnc;
-mod hgvs;
+pub mod hgvs;
 mod utils;

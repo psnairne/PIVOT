@@ -1,5 +1,4 @@
 use crate::hgvs::error::HGVSError;
-use crate::hgvs::json_schema::VariantValidatorResponse;
 use crate::hgvs::validated_c_hgvs::ValidatedCHgvs;
 
 pub trait HGVSData {

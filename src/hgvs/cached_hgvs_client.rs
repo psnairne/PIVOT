@@ -62,7 +62,7 @@ impl CachedHGVSClient {
         Ok(self)
     }
 
-    fn cache(&self) -> Result<RedbDatabase, DatabaseError> {
+    fn open_cache(&self) -> Result<RedbDatabase, DatabaseError> {
         RedbDatabase::open(&self.cache_file_path)
     }
 
@@ -100,7 +100,7 @@ impl HGVSData for CachedHGVSClient {
         &self,
         unvalidated_c_hgvs: &str,
     ) -> Result<ValidatedCHgvs, HGVSError> {
-        let cache = self.cache()?;
+        let cache = self.open_cache()?;
         if let Some(response) = Self::find_cache_entry(unvalidated_c_hgvs, &cache) {
             return Ok(response);
         }
@@ -110,46 +110,5 @@ impl HGVSData for CachedHGVSClient {
             .request_and_validate_c_hgvs(unvalidated_c_hgvs)?;
         CachedHGVSClient::cache_validated_c_hgvs(&validated_c_hgvs, &cache)?;
         Ok(validated_c_hgvs.clone())
-    }
-}
-
-impl ValidatedCHgvs {
-    fn as_bytes(&self) -> Vec<u8> {
-        serde_json::to_vec(self).unwrap()
-    }
-
-    fn from_bytes(bytes: &[u8]) -> Result<Self, &'static str> {
-        serde_json::from_slice(bytes).map_err(|_| "failed to decode json")
-    }
-
-    fn struct_name() -> String {
-        type_name::<ValidatedCHgvs>().to_string()
-    }
-}
-
-impl Value for ValidatedCHgvs {
-    type SelfType<'a> = ValidatedCHgvs;
-    type AsBytes<'a> = Vec<u8>;
-
-    fn fixed_width() -> Option<usize> {
-        None
-    }
-
-    fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
-    where
-        Self: 'a,
-    {
-        Self::from_bytes(data).expect("Could not convert to bytes.")
-    }
-
-    fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
-    where
-        Self: 'b,
-    {
-        value.as_bytes()
-    }
-
-    fn type_name() -> TypeName {
-        TypeName::new(ValidatedCHgvs::struct_name().as_str())
     }
 }

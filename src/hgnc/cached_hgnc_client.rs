@@ -2,7 +2,6 @@ use redb::{
     Database as RedbDatabase, Database, DatabaseError, ReadableDatabase, TableDefinition, TypeName,
     Value,
 };
-use std::any::type_name;
 use std::env::home_dir;
 use std::fmt::{Debug, Formatter};
 use std::fs;
@@ -14,54 +13,8 @@ use crate::hgnc::hgnc_client::HGNCClient;
 use crate::hgnc::json_schema::{GeneDoc, GeneResponse};
 use crate::hgnc::traits::HGNCData;
 use directories::ProjectDirs;
-use ratelimit::Ratelimiter;
-use reqwest::blocking::Client;
 
 const TABLE: TableDefinition<&str, GeneDoc> = TableDefinition::new("hgnc_request_cache");
-
-impl GeneDoc {
-    fn as_bytes(&self) -> Vec<u8> {
-        serde_json::to_vec(self).unwrap()
-    }
-
-    fn from_bytes(bytes: &[u8]) -> Result<Self, &'static str> {
-        serde_json::from_slice(bytes).map_err(|_| "failed to decode json")
-    }
-
-    fn struct_name() -> String {
-        type_name::<GeneResponse>()
-            .split("::")
-            .last()
-            .expect("Could not get Struct name")
-            .to_string()
-    }
-}
-impl Value for GeneDoc {
-    type SelfType<'a> = GeneDoc;
-    type AsBytes<'a> = Vec<u8>;
-
-    fn fixed_width() -> Option<usize> {
-        None
-    }
-
-    fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
-    where
-        Self: 'a,
-    {
-        Self::from_bytes(data).expect("Could not convert to bytes.")
-    }
-
-    fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
-    where
-        Self: 'b,
-    {
-        value.as_bytes()
-    }
-
-    fn type_name() -> TypeName {
-        TypeName::new(GeneDoc::struct_name().as_str())
-    }
-}
 
 pub struct CachedHGNCClient {
     cache_file_path: PathBuf,
@@ -70,7 +23,7 @@ pub struct CachedHGNCClient {
 
 impl HGNCData for CachedHGNCClient {
     fn request_gene_data(&self, query: GeneQuery) -> Result<GeneDoc, HGNCError> {
-        let cache = self.cache()?;
+        let cache = self.open_cache()?;
         if let Some(gene_doc) = Self::find_cache_entry(&query, &cache) {
             return Ok(gene_doc);
         }
@@ -128,10 +81,7 @@ impl HGNCData for CachedHGNCClient {
 }
 
 impl CachedHGNCClient {
-    pub fn new(
-        cache_file_path: PathBuf,
-        hgnc_client: HGNCClient,
-    ) -> Result<Self, HGNCError> {
+    pub fn new(cache_file_path: PathBuf, hgnc_client: HGNCClient) -> Result<Self, HGNCError> {
         Self::init_cache(&cache_file_path)?;
         Ok(CachedHGNCClient {
             cache_file_path,
@@ -172,7 +122,7 @@ impl CachedHGNCClient {
         self.cache_file_path = cache_dir.clone();
         Ok(self)
     }
-    fn cache(&self) -> Result<RedbDatabase, DatabaseError> {
+    fn open_cache(&self) -> Result<RedbDatabase, DatabaseError> {
         RedbDatabase::open(&self.cache_file_path)
     }
 
@@ -239,11 +189,7 @@ mod tests {
     fn test_cache(temp_dir: TempDir) {
         let symbol = "CLOCK";
         let cache_file_path = temp_dir.path().join("cache.hgnc");
-        let client = CachedHGNCClient::new(
-            cache_file_path.clone(),
-            HGNCClient::default(),
-        )
-        .unwrap();
+        let client = CachedHGNCClient::new(cache_file_path.clone(), HGNCClient::default()).unwrap();
 
         let _ = client.request_gene_data(GeneQuery::Symbol(symbol)).unwrap();
 
@@ -268,11 +214,7 @@ mod tests {
     ) {
         let temp_dir = tempfile::tempdir().expect("Failed to create temporary directory");
         let cache_file_path = temp_dir.path().join("cache.hgnc");
-        let client = CachedHGNCClient::new(
-            cache_file_path.clone(),
-            HGNCClient::default(),
-        )
-        .unwrap();
+        let client = CachedHGNCClient::new(cache_file_path.clone(), HGNCClient::default()).unwrap();
         let client = client
             .with_cache_dir(temp_dir.path().to_path_buf().join("test_cache"))
             .unwrap();
