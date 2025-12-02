@@ -44,9 +44,11 @@ macro_rules! implement_value_for_local_type {
 implement_value_for_local_type!(ValidatedCHgvs);
 implement_value_for_local_type!(GeneDoc);
 
+// for<'a> Self: From<Self::SelfType<'a>> is required so that cache_entry.value().into() works
+// for<'a> Self: Borrow<Self::SelfType<'a>> is required so that table.insert(key, object_to_cache.clone())?; works
 pub trait Cacheable: Sized + Clone + Value + 'static
 where
-    for<'a> Self: From<Self::SelfType<'a>>, // required so that cache_entry.value().into() works
+    for<'a> Self: From<Self::SelfType<'a>>,
     for<'a> Self: Borrow<Self::SelfType<'a>>,
 {
     fn keys(&self) -> Vec<&str>;
