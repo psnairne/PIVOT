@@ -49,8 +49,6 @@ impl Debug for CachedHGNCClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cache_structs_and_traits::cacher::Cacheable;
-    use redb::{Database as RedbDatabase, ReadableDatabase};
     use rstest::{fixture, rstest};
     use tempfile::TempDir;
 
@@ -68,18 +66,10 @@ mod tests {
 
         client.request_gene_data(GeneQuery::Symbol(symbol)).unwrap();
 
-        let cache = RedbDatabase::create(&client.cacher.cache_file_path()).unwrap();
-        let cache_reader = cache.begin_read().unwrap();
-        let table = cache_reader
-            .open_table(<GeneDoc as Cacheable>::table_definition())
-            .unwrap();
-
-        if let Ok(Some(cache_entry)) = table.get(symbol) {
-            let value = cache_entry.value();
-
-            assert_eq!(value.hgnc_id, "HGNC:2082");
-            assert_eq!(value.symbol, symbol);
-        }
+        let cache = client.cacher.open_cache().unwrap();
+        let cached_gene_doc = client.cacher.find_cache_entry(symbol, &cache).unwrap();
+        assert_eq!(cached_gene_doc.symbol, symbol);
+        assert_eq!(cached_gene_doc.hgnc_id, "HGNC:2082");
     }
 
     #[rstest]

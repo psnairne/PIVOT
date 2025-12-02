@@ -151,6 +151,7 @@ impl<T: Cacheable> Cacher<T> {
 mod tests {
     use super::*;
     use rstest::{fixture, rstest};
+    use serde::{Deserialize, Serialize};
     use tempfile::TempDir;
 
     #[fixture]
@@ -158,12 +159,91 @@ mod tests {
         tempfile::tempdir().expect("Failed to create temporary directory")
     }
 
+    #[derive(Debug, Serialize, Deserialize, Clone)]
+    struct MyFavouriteStruct {
+        name: String,
+        favourite_colour: String,
+        favourite_number: i32,
+        likes_cats: bool,
+    }
+
+    implement_value_for_local_type!(MyFavouriteStruct);
+
+    impl Cacheable for MyFavouriteStruct {
+        fn keys(&self) -> Vec<&str> {
+            vec![self.name.as_str()]
+        }
+    }
+
+    #[fixture]
+    fn my_favourite_struct_alice() -> MyFavouriteStruct {
+        MyFavouriteStruct {
+            name: "alice mchale".to_string(),
+            favourite_colour: "turquoise".to_string(),
+            favourite_number: 314,
+            likes_cats: false,
+        }
+    }
+
+    #[fixture]
+    fn my_favourite_struct_bob() -> MyFavouriteStruct {
+        MyFavouriteStruct {
+            name: "bob jones".to_string(),
+            favourite_colour: "red".to_string(),
+            favourite_number: 42,
+            likes_cats: true,
+        }
+    }
+
     #[rstest]
-    fn test(temp_dir: TempDir) {
-        let cache_file_path = temp_dir.path().join("cache.hgnc");
-        let hgvs_cacher = Cacher {
-            cache_file_path: cache_file_path,
-            _phantom: PhantomData::<ValidatedCHgvs>,
+    fn test_cache(temp_dir: TempDir) {
+        let cache_file_path = temp_dir.path().join("cache.my_favourite_struct");
+        let cacher = Cacher::<MyFavouriteStruct>::new(cache_file_path);
+
+        cacher.init_cache().unwrap();
+        let cache = cacher.open_cache().unwrap();
+
+        cacher
+            .cache_object(my_favourite_struct_alice(), &cache)
+            .unwrap();
+        cacher
+            .cache_object(my_favourite_struct_bob(), &cache)
+            .unwrap();
+
+        let cached_alice = cacher.find_cache_entry("alice mchale", &cache).unwrap();
+        assert_eq!(cached_alice.likes_cats, false);
+
+        let cached_bob = cacher.find_cache_entry("bob jones", &cache).unwrap();
+        assert_eq!(cached_bob.likes_cats, true);
+
+        assert!(cacher.find_cache_entry("janet smith", &cache).is_none());
+    }
+
+    #[rstest]
+    fn test_cache_overwrite(temp_dir: TempDir) {
+        let cache_file_path = temp_dir.path().join("cache.my_favourite_struct");
+        let cacher = Cacher::<MyFavouriteStruct>::new(cache_file_path);
+
+        cacher.init_cache().unwrap();
+        let cache = cacher.open_cache().unwrap();
+
+        cacher
+            .cache_object(my_favourite_struct_alice(), &cache)
+            .unwrap();
+
+        let cached_alice = cacher.find_cache_entry("alice mchale", &cache).unwrap();
+        assert_eq!(cached_alice.likes_cats, false);
+
+        let alice_opinion_changed = MyFavouriteStruct {
+            name: "alice mchale".to_string(),
+            favourite_colour: "turquoise".to_string(),
+            favourite_number: 314,
+            likes_cats: true,
         };
+
+        cacher.cache_object(alice_opinion_changed, &cache).unwrap();
+
+        let cached_alice = cacher.find_cache_entry("alice mchale", &cache).unwrap();
+        assert_eq!(cached_alice.likes_cats, true);
     }
 }

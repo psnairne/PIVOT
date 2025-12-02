@@ -101,7 +101,6 @@ pub struct ReferenceSequenceRecords {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-// The keys here are the sequence identifiers.
 pub struct VariantExonicPositions {
     #[serde(flatten)]
     pub exonic_positions: HashMap<String, ExonicPosition>,
@@ -109,8 +108,8 @@ pub struct VariantExonicPositions {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ExonicPosition {
-    pub end_exon: String,
     pub start_exon: String,
+    pub end_exon: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

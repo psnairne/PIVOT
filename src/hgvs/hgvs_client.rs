@@ -194,7 +194,6 @@ mod tests {
         let validated_c_hgvs = client
             .request_and_validate_c_hgvs(unvalidated_c_hgvs)
             .unwrap();
-        dbg!(&validated_c_hgvs);
         assert_eq!(validated_c_hgvs.c_hgvs(), unvalidated_c_hgvs);
     }
 

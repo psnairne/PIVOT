@@ -75,15 +75,11 @@ mod tests {
             .request_and_validate_c_hgvs(unvalidated_c_hgvs)
             .unwrap();
 
-        let cache = RedbDatabase::create(&client.cacher.cache_file_path()).unwrap();
-        let cache_reader = cache.begin_read().unwrap();
-        let table = cache_reader
-            .open_table(<ValidatedCHgvs as Cacheable>::table_definition())
+        let cache = client.cacher.open_cache().unwrap();
+        let cached_hgvs = client
+            .cacher
+            .find_cache_entry(unvalidated_c_hgvs, &cache)
             .unwrap();
-
-        if let Ok(Some(cache_entry)) = table.get(unvalidated_c_hgvs) {
-            let value = cache_entry.value();
-            assert_eq!(value.c_hgvs(), unvalidated_c_hgvs);
-        }
+        assert_eq!(cached_hgvs.c_hgvs(), unvalidated_c_hgvs);
     }
 }
