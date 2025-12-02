@@ -1,3 +1,4 @@
+#![allow(unused)]
 use crate::cache_structs_and_traits::cacher::Cacher;
 use crate::hgvs::error::HGVSError;
 use crate::hgvs::hgvs_client::HGVSClient;

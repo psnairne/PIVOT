@@ -1,3 +1,4 @@
+#![allow(unused)]
 use crate::hgvs::error::HGVSError;
 use crate::hgvs::json_schema::VariantValidatorResponse;
 use crate::hgvs::traits::HGVSData;

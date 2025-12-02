@@ -1,3 +1,4 @@
+#![allow(unused)]
 use crate::hgvs::error::HGVSError;
 use crate::hgvs::validated_c_hgvs::ValidatedCHgvs;
 

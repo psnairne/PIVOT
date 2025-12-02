@@ -1,3 +1,4 @@
+#![allow(unused)]
 use crate::hgvs::error::HGVSError;
 use crate::utils::{get_allele_term, is_hgnc_id};
 use phenopackets::ga4gh::vrsatile::v1::{
