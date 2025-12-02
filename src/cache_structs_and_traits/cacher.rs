@@ -211,10 +211,10 @@ mod tests {
             .unwrap();
 
         let cached_alice = cacher.find_cache_entry("alice mchale", &cache).unwrap();
-        assert_eq!(cached_alice.likes_cats, false);
+        assert!(!cached_alice.likes_cats);
 
         let cached_bob = cacher.find_cache_entry("bob jones", &cache).unwrap();
-        assert_eq!(cached_bob.likes_cats, true);
+        assert!(cached_bob.likes_cats);
 
         assert!(cacher.find_cache_entry("janet smith", &cache).is_none());
     }
@@ -232,7 +232,7 @@ mod tests {
             .unwrap();
 
         let cached_alice = cacher.find_cache_entry("alice mchale", &cache).unwrap();
-        assert_eq!(cached_alice.likes_cats, false);
+        assert!(!cached_alice.likes_cats);
 
         let alice_opinion_changed = MyFavouriteStruct {
             name: "alice mchale".to_string(),
@@ -244,6 +244,6 @@ mod tests {
         cacher.cache_object(alice_opinion_changed, &cache).unwrap();
 
         let cached_alice = cacher.find_cache_entry("alice mchale", &cache).unwrap();
-        assert_eq!(cached_alice.likes_cats, true);
+        assert!(cached_alice.likes_cats);
     }
 }
