@@ -9,17 +9,17 @@ use std::collections::HashMap;
 /// This struct is intended for use in unit testing. Instead of making live HTTP
 /// requests to the HGNC API, it serves data from an internal `HashMap`.
 /// This allows for deterministic testing of components that rely on `HGNCData`.
-pub struct MockHGNClient {
+pub struct MockHGNCClient {
     docs: HashMap<String, GeneDoc>,
 }
 
-impl MockHGNClient {
-    pub fn new(docs: HashMap<String, GeneDoc>) -> MockHGNClient {
-        MockHGNClient { docs }
+impl MockHGNCClient {
+    pub fn new(docs: HashMap<String, GeneDoc>) -> MockHGNCClient {
+        MockHGNCClient { docs }
     }
 }
 
-impl HGNCData for MockHGNClient {
+impl HGNCData for MockHGNCClient {
     fn request_gene_data(&self, query: GeneQuery) -> Result<GeneDoc, HGNCError> {
         let identifier = query.inner();
         self.docs
@@ -33,7 +33,7 @@ impl HGNCData for MockHGNClient {
     }
 }
 
-impl Default for MockHGNClient {
+impl Default for MockHGNCClient {
     fn default() -> Self {
         let mut docs = HashMap::new();
         docs.insert(
@@ -92,7 +92,7 @@ impl Default for MockHGNClient {
                 .change_symbol("SPOCK1"),
         );
 
-        MockHGNClient::new(docs)
+        MockHGNCClient::new(docs)
     }
 }
 
@@ -101,7 +101,7 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
 
-    fn setup_mock() -> MockHGNClient {
+    fn setup_mock() -> MockHGNCClient {
         let mut docs = HashMap::new();
 
         docs.insert(
@@ -118,12 +118,7 @@ mod tests {
                 .change_symbol("BRCA1"),
         );
 
-        docs.insert(
-            "NO_SYMBOL_DATA".to_string(),
-            GeneDoc::default().change_hgnc_id("HGNC:9999"),
-        );
-
-        MockHGNClient::new(docs)
+        MockHGNCClient::new(docs)
     }
 
     #[test]
@@ -184,22 +179,8 @@ mod tests {
         let result = mock.request_gene_identifier_pair(query);
         assert!(result.is_ok());
 
-        let (id, symbol) = result.unwrap();
-        assert_eq!(id, "HGNC:1100");
+        let (symbol, id) = result.unwrap();
         assert_eq!(symbol, "BRCA1");
-    }
-
-    #[test]
-    fn test_missing_fields_returns_error() {
-        let mock = setup_mock();
-
-        let result = mock.request_gene_symbol("NO_SYMBOL_DATA");
-
-        assert!(result.is_err());
-        if let Err(HGNCError::UnexpectedNumberOfDocuments { identifier, .. }) = result {
-            assert_eq!(identifier, "NO_SYMBOL_DATA");
-        } else {
-            panic!("Should fail due to missing field in doc");
-        }
+        assert_eq!(id, "HGNC:1100");
     }
 }

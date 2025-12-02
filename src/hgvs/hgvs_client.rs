@@ -56,7 +56,11 @@ impl HGVSClient {
         )
     }
 
-    fn fetch_request(&self, fetch_url: String) -> VariantValidatorResponse {
+    fn fetch_request(
+        &self,
+        fetch_url: String,
+        unvalidated_c_hgvs: &str,
+    ) -> Result<VariantValidatorResponse, HGVSError> {
         if let Err(duration) = self.rate_limiter.try_wait() {
             sleep(duration);
         }
@@ -67,8 +71,16 @@ impl HGVSClient {
             .header("User-Agent", "PIVOT")
             .header("Accept", "application/json")
             .send()
-            .unwrap();
-        response.json::<VariantValidatorResponse>().unwrap()
+            .map_err(|err| HGVSError::FetchRequest {
+                c_hgvs: unvalidated_c_hgvs.to_string(),
+                err: err.to_string(),
+            })?;
+        response.json::<VariantValidatorResponse>().map_err(|err| {
+            HGVSError::DeserializeVariantValidatorResponseToSchema {
+                c_hgvs: unvalidated_c_hgvs.to_string(),
+                err: err.to_string(),
+            }
+        })
     }
 }
 
@@ -87,7 +99,7 @@ impl HGVSData for HGVSClient {
 
         let fetch_url = self.get_fetch_url(transcript, allele);
 
-        let response = self.fetch_request(fetch_url.clone());
+        let response = self.fetch_request(fetch_url.clone(), unvalidated_c_hgvs)?;
 
         if response.flag != "gene_variant" {
             return Err(HGVSError::NonGeneVariant {
@@ -169,15 +181,42 @@ impl HGVSClient {
 
 #[cfg(test)]
 mod tests {
+    use crate::hgnc::enums::GeneQuery;
+    use crate::hgvs::error::HGVSError;
     use crate::hgvs::hgvs_client::HGVSClient;
     use crate::hgvs::traits::HGVSData;
     use rstest::rstest;
 
     #[rstest]
-    fn test_request() {
-        let c_hgvs = "NM_001173464.1:c.2860C>T";
+    fn test_request_and_validate_c_hgvs() {
+        let unvalidated_c_hgvs = "NM_001173464.1:c.2860C>T";
         let client = HGVSClient::default();
-        let validated_c_hgvs = client.request_and_validate_c_hgvs(c_hgvs).unwrap();
-        dbg!(validated_c_hgvs);
+        let validated_c_hgvs = client
+            .request_and_validate_c_hgvs(unvalidated_c_hgvs)
+            .unwrap();
+        dbg!(&validated_c_hgvs);
+        assert_eq!(validated_c_hgvs.c_hgvs(), unvalidated_c_hgvs);
+    }
+
+    #[rstest]
+    fn test_request_and_validate_c_hgvs_wrong_reference_base_err() {
+        let unvalidated_c_hgvs = "NM_001173464.1:c.2860G>T";
+        let client = HGVSClient::default();
+        let result = client.request_and_validate_c_hgvs(unvalidated_c_hgvs);
+        assert!(matches!(
+            result,
+            Err(HGVSError::DeserializeVariantValidatorResponseToSchema { .. })
+        ));
+    }
+
+    #[rstest]
+    fn test_request_and_validate_c_hgvs_not_c_hgvs_err() {
+        let unvalidated_c_hgvs = "NC_000012.12:g.39332405G>A";
+        let client = HGVSClient::default();
+        let result = client.request_and_validate_c_hgvs(unvalidated_c_hgvs);
+        assert!(matches!(
+            result,
+            Err(HGVSError::IncorrectCHGVSFormat { .. })
+        ));
     }
 }

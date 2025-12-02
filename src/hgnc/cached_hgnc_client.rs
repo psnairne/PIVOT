@@ -66,7 +66,7 @@ mod tests {
         let client =
             CachedHGNCClient::new(Cacher::new(cache_file_path), HGNCClient::default()).unwrap();
 
-        let _ = client.request_gene_data(GeneQuery::Symbol(symbol)).unwrap();
+        client.request_gene_data(GeneQuery::Symbol(symbol)).unwrap();
 
         let cache = RedbDatabase::create(&client.cacher.cache_file_path()).unwrap();
         let cache_reader = cache.begin_read().unwrap();
@@ -88,8 +88,8 @@ mod tests {
     fn test_request_gene_identifier_pair(
         #[case] query: GeneQuery,
         #[case] expected_pair: (&str, &str),
+        temp_dir: TempDir,
     ) {
-        let temp_dir = tempfile::tempdir().expect("Failed to create temporary directory");
         let cache_file_path = temp_dir.path().join("cache.hgnc");
         let client =
             CachedHGNCClient::new(Cacher::new(cache_file_path), HGNCClient::default()).unwrap();

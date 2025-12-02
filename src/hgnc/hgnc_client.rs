@@ -90,12 +90,12 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
-    #[case(GeneQuery::Symbol("ZNF3"), "HGNC:13089", "ZNF3")]
-    #[case(GeneQuery::HgncId("HGNC:13089"), "HGNC:13089", "ZNF3")]
+    #[case(GeneQuery::Symbol("ZNF3"), "ZNF3", "HGNC:13089")]
+    #[case(GeneQuery::HgncId("HGNC:13089"), "ZNF3", "HGNC:13089")]
     fn test_request_gene_data(
         #[case] query: GeneQuery,
-        #[case] expected_hgnc_id: String,
         #[case] expected_symbol: String,
+        #[case] expected_hgnc_id: String,
     ) {
         let client = HGNCClient::default();
 
@@ -106,8 +106,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case(GeneQuery::Symbol("ZNF3"), ("HGNC:13089", "ZNF3"))]
-    #[case(GeneQuery::HgncId("HGNC:13089"), ("HGNC:13089", "ZNF3"))]
+    #[case(GeneQuery::Symbol("ZNF3"), ("ZNF3", "HGNC:13089"))]
+    #[case(GeneQuery::HgncId("HGNC:13089"), ("ZNF3", "HGNC:13089"))]
     fn test_request_gene_identifier_pair(
         #[case] query: GeneQuery,
         #[case] expected_pair: (&str, &str),

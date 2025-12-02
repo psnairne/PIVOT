@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// The variant_info HashMap will contain a single pair of the form
-/// hgvs_string -> SingleVariantInfo
+/// unvalidated_c_hgvs -> SingleVariantInfo
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VariantValidatorResponse {
     #[serde(flatten)]

@@ -9,7 +9,7 @@ pub trait HGNCData {
         Ok(doc.hgnc_id_owned())
     }
     fn request_gene_symbol(&self, hgnc_id: &str) -> Result<String, HGNCError> {
-        let doc = self.request_gene_data(GeneQuery::Symbol(hgnc_id))?;
+        let doc = self.request_gene_data(GeneQuery::HgncId(hgnc_id))?;
         Ok(doc.symbol_owned())
     }
     fn request_gene_identifier_pair(

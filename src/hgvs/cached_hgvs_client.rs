@@ -37,3 +37,53 @@ impl HGVSData for CachedHGVSClient {
         Ok(validated_c_hgvs.clone())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cache_structs_and_traits::cacher::Cacheable;
+    use redb::{Database as RedbDatabase, ReadableDatabase};
+    use rstest::{fixture, rstest};
+    use tempfile::TempDir;
+
+    #[fixture]
+    fn temp_dir() -> TempDir {
+        tempfile::tempdir().expect("Failed to create temporary directory")
+    }
+
+    #[rstest]
+    fn test_request_and_validate_c_hgvs(temp_dir: TempDir) {
+        let unvalidated_c_hgvs = "NM_001173464.1:c.2860C>T";
+        let cache_file_path = temp_dir.path().join("cache.hgvs");
+        let client =
+            CachedHGVSClient::new(Cacher::new(cache_file_path), HGVSClient::default()).unwrap();
+
+        let validated_c_hgvs = client
+            .request_and_validate_c_hgvs(unvalidated_c_hgvs)
+            .unwrap();
+        assert_eq!(validated_c_hgvs.c_hgvs(), unvalidated_c_hgvs);
+    }
+
+    #[rstest]
+    fn test_cache(temp_dir: TempDir) {
+        let unvalidated_c_hgvs = "NM_001173464.1:c.2860C>T";
+        let cache_file_path = temp_dir.path().join("cache.hgvs");
+        let client =
+            CachedHGVSClient::new(Cacher::new(cache_file_path), HGVSClient::default()).unwrap();
+
+        client
+            .request_and_validate_c_hgvs(unvalidated_c_hgvs)
+            .unwrap();
+
+        let cache = RedbDatabase::create(&client.cacher.cache_file_path()).unwrap();
+        let cache_reader = cache.begin_read().unwrap();
+        let table = cache_reader
+            .open_table(<ValidatedCHgvs as Cacheable>::table_definition())
+            .unwrap();
+
+        if let Ok(Some(cache_entry)) = table.get(unvalidated_c_hgvs) {
+            let value = cache_entry.value();
+            assert_eq!(value.c_hgvs(), unvalidated_c_hgvs);
+        }
+    }
+}

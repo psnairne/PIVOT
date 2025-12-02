@@ -1,4 +1,5 @@
 use crate::cache_structs_and_traits::error::CacherError;
+use crate::hgvs::enums::{AlleleCount, ChromosomalSex};
 use redb::{CommitError, DatabaseError, StorageError, TableError, TransactionError};
 use thiserror::Error;
 
@@ -35,6 +36,21 @@ pub enum HGVSError {
         element: String,
         problem: String,
     },
+    #[error(
+        "The following data for a HGVS was contradictory: Chromosomal Sex: {chromosomal_sex:?}, AlleleCount: {allele_count:?}, is_x: {is_x}, is_y: {is_y}"
+    )]
+    ContradictoryAllelicData {
+        chromosomal_sex: ChromosomalSex,
+        allele_count: AlleleCount,
+        is_x: bool,
+        is_y: bool,
+    },
+    #[error(
+        "VariantValidator response for {c_hgvs} could not be deserialized to schema. {c_hgvs} may be invalid. Error: {err}."
+    )]
+    DeserializeVariantValidatorResponseToSchema { c_hgvs: String, err: String },
+    #[error("VariantValidator fetch request for {c_hgvs} failed. Error: {err}.")]
+    FetchRequest { c_hgvs: String, err: String },
     #[error(transparent)]
     CacheDatabase(#[from] DatabaseError),
     #[error(transparent)]
