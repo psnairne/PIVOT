@@ -2,7 +2,7 @@
 use crate::hgvs::error::HGVSError;
 use crate::hgvs::json_schema::VariantValidatorResponse;
 use crate::hgvs::traits::HGVSData;
-use crate::hgvs::validated_c_hgvs::ValidatedCHgvs;
+use crate::hgvs::validated_c_hgvs::HgvsVariant;
 use ratelimit::Ratelimiter;
 use reqwest::blocking::Client;
 use std::thread::sleep;
@@ -59,7 +59,7 @@ impl HGVSClient {
     fn fetch_request(
         &self,
         fetch_url: String,
-        unvalidated_c_hgvs: &str,
+        unvalidated_hgvs: &str,
     ) -> Result<VariantValidatorResponse, HGVSError> {
         if let Err(duration) = self.rate_limiter.try_wait() {
             sleep(duration);
@@ -72,12 +72,12 @@ impl HGVSClient {
             .header("Accept", "application/json")
             .send()
             .map_err(|err| HGVSError::FetchRequest {
-                c_hgvs: unvalidated_c_hgvs.to_string(),
+                hgvs: unvalidated_hgvs.to_string(),
                 err: err.to_string(),
             })?;
         response.json::<VariantValidatorResponse>().map_err(|err| {
             HGVSError::DeserializeVariantValidatorResponseToSchema {
-                c_hgvs: unvalidated_c_hgvs.to_string(),
+                hgvs: unvalidated_hgvs.to_string(),
                 err: err.to_string(),
             }
         })
@@ -85,46 +85,46 @@ impl HGVSClient {
 }
 
 impl HGVSData for HGVSClient {
-    fn request_and_validate_c_hgvs(
+    fn request_and_validate_hgvs(
         &self,
-        unvalidated_c_hgvs: &str,
-    ) -> Result<ValidatedCHgvs, HGVSError> {
-        let (transcript, allele) = Self::get_transcript_and_allele(unvalidated_c_hgvs)?;
-        if !Self::validate_is_c_hgvs(allele) {
-            return Err(HGVSError::IncorrectCHGVSFormat {
-                c_hgvs: unvalidated_c_hgvs.to_string(),
-                problem: "Allele did not begin with c.".to_string(),
+        unvalidated_hgvs: &str,
+    ) -> Result<HgvsVariant, HGVSError> {
+        let (transcript, allele) = Self::get_transcript_and_allele(unvalidated_hgvs)?;
+        if !Self::validate_is_c_hgvs(allele) && !Self::validate_is_n_hgvs(allele) {
+            return Err(HGVSError::HgvsFormatNotAccepted {
+                hgvs: unvalidated_hgvs.to_string(),
+                problem: "Allele did not begin with c. or n.".to_string(),
             });
         }
 
         let fetch_url = self.get_fetch_url(transcript, allele);
 
-        let response = self.fetch_request(fetch_url.clone(), unvalidated_c_hgvs)?;
+        let response = self.fetch_request(fetch_url.clone(), unvalidated_hgvs)?;
 
         if response.flag != "gene_variant" {
             return Err(HGVSError::NonGeneVariant {
-                c_hgvs: unvalidated_c_hgvs.to_string(),
+                hgvs: unvalidated_hgvs.to_string(),
                 flag: response.flag.clone(),
             });
         }
 
-        let variant_info = response.variant_info[unvalidated_c_hgvs].clone();
+        let variant_info = response.variant_info[unvalidated_hgvs].clone();
 
         let assemblies = variant_info.primary_assembly_loci;
 
         let assembly = assemblies
             .get(&self.genome_assembly)
             .ok_or_else(|| HGVSError::GenomeAssemblyNotFound {
-                c_hgvs: unvalidated_c_hgvs.to_string(),
+                hgvs: unvalidated_hgvs.to_string(),
                 desired_assembly: self.genome_assembly.clone(),
                 found_assemblies: assemblies.keys().cloned().collect::<Vec<String>>(),
             })?
             .clone();
 
         let position_string = assembly.vcf.pos;
-        let position = position_string.parse::<u64>().map_err(|_| {
+        let position = position_string.parse::<u32>().map_err(|_| {
             HGVSError::InvalidVariantValidatorResponseElement {
-                c_hgvs: unvalidated_c_hgvs.to_string(),
+                hgvs: unvalidated_hgvs.to_string(),
                 element: position_string,
                 problem: "position should be parseable to u32".to_string(),
             }
@@ -140,7 +140,7 @@ impl HGVSData for HGVSClient {
             Some(variant_info.hgvs_predicted_protein_consequence.tlr)
         };
 
-        let validated_c_hgvs = ValidatedCHgvs::new(
+        let validated_c_hgvs = HgvsVariant::new(
             self.genome_assembly.clone(),
             assembly.vcf.chr,
             position,
@@ -150,7 +150,7 @@ impl HGVSData for HGVSClient {
             variant_info.gene_symbol,
             transcript.to_string(),
             allele.to_string(),
-            unvalidated_c_hgvs.to_string(),
+            unvalidated_hgvs.to_string(),
             assembly.hgvs_genomic_description,
             p_hgvs,
         );
@@ -159,15 +159,15 @@ impl HGVSData for HGVSClient {
 }
 
 impl HGVSClient {
-    fn get_transcript_and_allele(unvalidated_c_hgvs: &str) -> Result<(&str, &str), HGVSError> {
-        let colon_count = unvalidated_c_hgvs.matches(':').count();
+    fn get_transcript_and_allele(unvalidated_hgvs: &str) -> Result<(&str, &str), HGVSError> {
+        let colon_count = unvalidated_hgvs.matches(':').count();
         if colon_count != 1 {
-            Err(HGVSError::IncorrectCHGVSFormat {
-                c_hgvs: unvalidated_c_hgvs.to_string(),
+            Err(HGVSError::HgvsFormatNotAccepted {
+                hgvs: unvalidated_hgvs.to_string(),
                 problem: "There must be exactly one colon in a HGVS string.".to_string(),
             })
         } else {
-            let split_hgvs = unvalidated_c_hgvs.split(':').collect::<Vec<&str>>();
+            let split_hgvs = unvalidated_hgvs.split(':').collect::<Vec<&str>>();
             let transcript = split_hgvs[0];
             let allele = split_hgvs[1];
             Ok((transcript, allele))
@@ -176,6 +176,10 @@ impl HGVSClient {
 
     fn validate_is_c_hgvs(allele: &str) -> bool {
         allele.starts_with("c.")
+    }
+
+    fn validate_is_n_hgvs(allele: &str) -> bool {
+        allele.starts_with("n.")
     }
 }
 
@@ -188,20 +192,20 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
-    fn test_request_and_validate_c_hgvs() {
-        let unvalidated_c_hgvs = "NM_001173464.1:c.2860C>T";
+    fn test_request_and_validate_hgvs() {
+        let unvalidated_hgvs = "NM_001173464.1:c.2860C>T";
         let client = HGVSClient::default();
-        let validated_c_hgvs = client
-            .request_and_validate_c_hgvs(unvalidated_c_hgvs)
+        let validated_hgvs = client
+            .request_and_validate_hgvs(unvalidated_hgvs)
             .unwrap();
-        assert_eq!(validated_c_hgvs.c_hgvs(), unvalidated_c_hgvs);
+        assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
     #[rstest]
-    fn test_request_and_validate_c_hgvs_wrong_reference_base_err() {
-        let unvalidated_c_hgvs = "NM_001173464.1:c.2860G>T";
+    fn test_request_and_validate_hgvs_wrong_reference_base_err() {
+        let unvalidated_hgvs = "NM_001173464.1:c.2860G>T";
         let client = HGVSClient::default();
-        let result = client.request_and_validate_c_hgvs(unvalidated_c_hgvs);
+        let result = client.request_and_validate_hgvs(unvalidated_hgvs);
         assert!(matches!(
             result,
             Err(HGVSError::DeserializeVariantValidatorResponseToSchema { .. })
@@ -209,13 +213,13 @@ mod tests {
     }
 
     #[rstest]
-    fn test_request_and_validate_c_hgvs_not_c_hgvs_err() {
-        let unvalidated_c_hgvs = "NC_000012.12:g.39332405G>A";
+    fn test_request_and_validate_hgvs_not_c_or_n_hgvs_err() {
+        let unvalidated_hgvs = "NC_000012.12:g.39332405G>A";
         let client = HGVSClient::default();
-        let result = client.request_and_validate_c_hgvs(unvalidated_c_hgvs);
+        let result = client.request_and_validate_hgvs(unvalidated_hgvs);
         assert!(matches!(
             result,
-            Err(HGVSError::IncorrectCHGVSFormat { .. })
+            Err(HGVSError::HgvsFormatNotAccepted { .. })
         ));
     }
 }

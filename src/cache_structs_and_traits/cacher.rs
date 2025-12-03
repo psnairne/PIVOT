@@ -1,6 +1,6 @@
 use crate::cache_structs_and_traits::error::CacherError;
 use crate::hgnc::json_schema::GeneDoc;
-use crate::hgvs::validated_c_hgvs::ValidatedCHgvs;
+use crate::hgvs::validated_c_hgvs::HgvsVariant;
 use directories::ProjectDirs;
 use redb::{
     Database as RedbDatabase, Database, DatabaseError, ReadableDatabase, TableDefinition, TypeName,
@@ -41,7 +41,7 @@ macro_rules! implement_value_for_local_type {
     };
 }
 
-implement_value_for_local_type!(ValidatedCHgvs);
+implement_value_for_local_type!(HgvsVariant);
 implement_value_for_local_type!(GeneDoc);
 
 // for<'a> Self: From<Self::SelfType<'a>> is required so that cache_entry.value().into() works
@@ -58,9 +58,9 @@ where
     }
 }
 
-impl Cacheable for ValidatedCHgvs {
+impl Cacheable for HgvsVariant {
     fn keys(&self) -> Vec<&str> {
-        vec![self.c_hgvs()]
+        vec![self.transcript_hgvs()]
     }
 }
 

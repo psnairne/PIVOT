@@ -1,12 +1,8 @@
 #![allow(clippy::upper_case_acronyms)]
 #[derive(Debug)]
-pub enum ChromosomalSex {
-    X,
-    XX,
-    XY,
-    XXY,
-    XYY,
-    XXX,
+pub enum Sex {
+    Female,
+    Male,
     Unknown,
 }
 

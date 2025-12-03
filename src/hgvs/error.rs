@@ -1,21 +1,21 @@
 use crate::cache_structs_and_traits::error::CacherError;
-use crate::hgvs::enums::{AlleleCount, ChromosomalSex};
+use crate::hgvs::enums::{AlleleCount, Sex};
 use redb::{CommitError, DatabaseError, StorageError, TableError, TransactionError};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum HGVSError {
-    #[error("Problem {problem} in found HGVS: {c_hgvs} ")]
-    IncorrectCHGVSFormat { c_hgvs: String, problem: String },
+    #[error("Problem {problem} in found HGVS: {hgvs} ")]
+    HgvsFormatNotAccepted { hgvs: String, problem: String },
     #[error(
-        "VariantValidator response for {c_hgvs} did not have flag gene_variant. The flag was {flag} instead. "
+        "VariantValidator response for {hgvs} did not have flag gene_variant. The flag was {flag} instead. "
     )]
-    NonGeneVariant { c_hgvs: String, flag: String },
+    NonGeneVariant { hgvs: String, flag: String },
     #[error(
-        "VariantValidator response for {c_hgvs} did not have genome_assembly {desired_assembly}. The following assemblies were found instead: {found_assemblies:?}"
+        "VariantValidator response for {hgvs} did not have genome_assembly {desired_assembly}. The following assemblies were found instead: {found_assemblies:?}"
     )]
     GenomeAssemblyNotFound {
-        c_hgvs: String,
+        hgvs: String,
         desired_assembly: String,
         found_assemblies: Vec<String>,
     },
@@ -29,10 +29,10 @@ pub enum HGVSError {
         hgvs_gene: String,
     },
     #[error(
-        "VariantValidator response for {c_hgvs} has element {element} with following problem: {problem}"
+        "VariantValidator response for {hgvs} has element {element} with following problem: {problem}"
     )]
     InvalidVariantValidatorResponseElement {
-        c_hgvs: String,
+        hgvs: String,
         element: String,
         problem: String,
     },
@@ -40,17 +40,17 @@ pub enum HGVSError {
         "The following data for a HGVS was contradictory: Chromosomal Sex: {chromosomal_sex:?}, AlleleCount: {allele_count:?}, is_x: {is_x}, is_y: {is_y}"
     )]
     ContradictoryAllelicData {
-        chromosomal_sex: ChromosomalSex,
+        chromosomal_sex: Sex,
         allele_count: AlleleCount,
         is_x: bool,
         is_y: bool,
     },
     #[error(
-        "VariantValidator response for {c_hgvs} could not be deserialized to schema. {c_hgvs} may be invalid. Error: {err}."
+        "VariantValidator response for {hgvs} could not be deserialized to schema. {hgvs} may be invalid. Error: {err}."
     )]
-    DeserializeVariantValidatorResponseToSchema { c_hgvs: String, err: String },
-    #[error("VariantValidator fetch request for {c_hgvs} failed. Error: {err}.")]
-    FetchRequest { c_hgvs: String, err: String },
+    DeserializeVariantValidatorResponseToSchema { hgvs: String, err: String },
+    #[error("VariantValidator fetch request for {hgvs} failed. Error: {err}.")]
+    FetchRequest { hgvs: String, err: String },
     #[error(transparent)]
     CacheDatabase(#[from] DatabaseError),
     #[error(transparent)]

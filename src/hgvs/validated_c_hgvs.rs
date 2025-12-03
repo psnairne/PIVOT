@@ -1,5 +1,5 @@
 #![allow(unused)]
-use crate::hgvs::enums::{AlleleCount, ChromosomalSex};
+use crate::hgvs::enums::{AlleleCount, Sex};
 use crate::hgvs::error::HGVSError;
 use phenopackets::ga4gh::vrsatile::v1::{
     Expression, GeneDescriptor, MoleculeContext, VariationDescriptor, VcfRecord,
@@ -11,39 +11,39 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ValidatedCHgvs {
+pub struct HgvsVariant {
     /// Genome build, e.g., hg38
     assembly: String,
     /// Chromosome, e.g., "17"
     chr: String,
     /// Position on the chromosome
-    position: u64,
+    position: u32,
     /// Reference allele
     ref_allele: String,
     /// Alternate allele
     alt_allele: String,
+    /// Gene symbol, e.g., FBN1
+    symbol: String,
     /// HUGO Gene Nomenclature Committee identifier, e.g., HGNC:3603
     hgnc_id: String,
-    /// Gene symbol, e.g., FBN1
-    gene_symbol: String,
     /// Transcript, e.g., NM_000138.5
     transcript: String,
     /// HGVS Nomenclature, e.g., c.8242G>T
     allele: String,
     /// Coding HGVS nomenclature, e.g., NM_000138.5:c.8242G>T
-    c_hgvs: String,
+    transcript_hgvs: String,
     /// Genomic HGVS nomenclature, e.g., NC_000015.10:g.48411364C>A
     g_hgvs: String,
     /// Protein level HGVS, if available
     p_hgvs: Option<String>,
 }
 
-impl ValidatedCHgvs {
+impl HgvsVariant {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         assembly: String,
         chr: String,
-        position: u64,
+        position: u32,
         ref_allele: String,
         alt_allele: String,
         hgnc_id: String,
@@ -54,17 +54,17 @@ impl ValidatedCHgvs {
         g_hgvs: String,
         p_hgvs: Option<String>,
     ) -> Self {
-        ValidatedCHgvs {
+        HgvsVariant {
             assembly,
             chr,
             position,
             ref_allele,
             alt_allele,
             hgnc_id,
-            gene_symbol,
+            symbol: gene_symbol,
             transcript,
             allele,
-            c_hgvs,
+            transcript_hgvs: c_hgvs,
             g_hgvs,
             p_hgvs,
         }
@@ -85,17 +85,17 @@ impl ValidatedCHgvs {
         g_hgvs: &str,
         p_hgvs: Option<&str>,
     ) -> Self {
-        ValidatedCHgvs {
+        HgvsVariant {
             assembly: assembly.to_string(),
             chr: chr.to_string(),
             position,
             ref_allele: ref_allele.to_string(),
             alt_allele: alt_allele.to_string(),
             hgnc_id: hgnc_id.to_string(),
-            gene_symbol: gene_symbol.to_string(),
+            symbol: gene_symbol.to_string(),
             transcript: transcript.to_string(),
             allele: allele.to_string(),
-            c_hgvs: c_hgvs.to_string(),
+            transcript_hgvs: c_hgvs.to_string(),
             g_hgvs: g_hgvs.to_string(),
             p_hgvs: p_hgvs.map(|v| v.to_string()),
         }
@@ -126,7 +126,7 @@ impl ValidatedCHgvs {
     }
 
     pub fn gene_symbol(&self) -> &str {
-        &self.gene_symbol
+        &self.symbol
     }
 
     pub fn transcript(&self) -> &str {
@@ -137,8 +137,8 @@ impl ValidatedCHgvs {
         self.allele.as_ref()
     }
 
-    pub fn c_hgvs(&self) -> &str {
-        self.c_hgvs.as_ref()
+    pub fn transcript_hgvs(&self) -> &str {
+        self.transcript_hgvs.as_ref()
     }
 
     pub fn g_hgvs(&self) -> &str {
@@ -162,7 +162,7 @@ impl ValidatedCHgvs {
     pub fn create_variant_interpretation(
         &self,
         allele_count: AlleleCount,
-        chromosomal_sex: ChromosomalSex,
+        sex: Sex,
     ) -> Result<VariantInterpretation, HGVSError> {
         let gene_context = GeneDescriptor {
             value_id: self.hgnc_id().to_string(),
@@ -172,7 +172,7 @@ impl ValidatedCHgvs {
 
         let hgvs_c = Expression {
             syntax: "hgvs.c".to_string(),
-            value: self.c_hgvs().to_string(),
+            value: self.transcript_hgvs().to_string(),
             version: String::default(),
         };
         let hgvs_g = Expression {
@@ -201,7 +201,7 @@ impl ValidatedCHgvs {
         };
 
         let allelic_state = Self::get_allele_term(
-            chromosomal_sex,
+            sex,
             allele_count,
             self.is_x_chromosomal(),
             self.is_y_chromosomal(),
@@ -224,7 +224,7 @@ impl ValidatedCHgvs {
     }
 
     fn get_allele_term(
-        chromosomal_sex: ChromosomalSex,
+        chromosomal_sex: Sex,
         allele_count: AlleleCount,
         is_x: bool,
         is_y: bool,
@@ -241,10 +241,10 @@ impl ValidatedCHgvs {
             }),
             // variants on x-chromosome
             (
-                ChromosomalSex::XX
-                | ChromosomalSex::XXY
-                | ChromosomalSex::XXX
-                | ChromosomalSex::Unknown,
+                Sex::Female
+                | Sex::XXY
+                | Sex::XXX
+                | Sex::Unknown,
                 AlleleCount::Double,
                 true,
                 false,
@@ -253,7 +253,7 @@ impl ValidatedCHgvs {
                 label: "homozygous".to_string(),
             }),
             (
-                ChromosomalSex::XX | ChromosomalSex::XXY | ChromosomalSex::XXX,
+                Sex::Female | Sex::XXY | Sex::XXX,
                 AlleleCount::Single,
                 true,
                 false,
@@ -262,7 +262,7 @@ impl ValidatedCHgvs {
                 label: "heterozygous".to_string(),
             }),
             (
-                ChromosomalSex::X | ChromosomalSex::XY | ChromosomalSex::XYY,
+                Sex::X | Sex::Male | Sex::XYY,
                 AlleleCount::Single,
                 true,
                 false,
@@ -270,28 +270,28 @@ impl ValidatedCHgvs {
                 id: "GENO:0000136".to_string(),
                 label: "hemizygous".to_string(),
             }),
-            (ChromosomalSex::Unknown, AlleleCount::Single, true, false) => Ok(OntologyClass {
+            (Sex::Unknown, AlleleCount::Single, true, false) => Ok(OntologyClass {
                 id: "GENO:0000137".to_string(),
                 label: "unspecified zygosity".to_string(),
             }),
             // variants on y-chromosome
-            (ChromosomalSex::XYY | ChromosomalSex::Unknown, AlleleCount::Double, false, true) => {
+            (Sex::XYY | Sex::Unknown, AlleleCount::Double, false, true) => {
                 Ok(OntologyClass {
                     id: "GENO:0000136".to_string(),
                     label: "homozygous".to_string(),
                 })
             }
-            (ChromosomalSex::XYY, AlleleCount::Single, false, true) => Ok(OntologyClass {
+            (Sex::XYY, AlleleCount::Single, false, true) => Ok(OntologyClass {
                 id: "GENO:0000136".to_string(),
                 label: "heterozygous".to_string(),
             }),
-            (ChromosomalSex::XY | ChromosomalSex::XXY, AlleleCount::Single, false, true) => {
+            (Sex::Male | Sex::XXY, AlleleCount::Single, false, true) => {
                 Ok(OntologyClass {
                     id: "GENO:0000136".to_string(),
                     label: "hemizygous".to_string(),
                 })
             }
-            (ChromosomalSex::Unknown, AlleleCount::Single, false, true) => Ok(OntologyClass {
+            (Sex::Unknown, AlleleCount::Single, false, true) => Ok(OntologyClass {
                 id: "GENO:0000137".to_string(),
                 label: "unspecified zygosity".to_string(),
             }),
@@ -309,7 +309,7 @@ impl ValidatedCHgvs {
         let (expected, id_type) = if Self::is_hgnc_id(gene) {
             (self.hgnc_id.as_str(), "HGNC ID")
         } else {
-            (self.gene_symbol.as_str(), "gene symbol")
+            (self.symbol.as_str(), "gene symbol")
         };
 
         if gene == expected {
@@ -333,16 +333,16 @@ impl ValidatedCHgvs {
 #[cfg(test)]
 mod tests {
     use crate::hgnc::enums::GeneQuery;
-    use crate::hgvs::enums::{AlleleCount, ChromosomalSex};
+    use crate::hgvs::enums::{AlleleCount, Sex};
     use crate::hgvs::hgvs_client::HGVSClient;
     use crate::hgvs::traits::HGVSData;
-    use crate::hgvs::validated_c_hgvs::ValidatedCHgvs;
+    use crate::hgvs::validated_c_hgvs::HgvsVariant;
     use phenopackets::ga4gh::vrsatile::v1::Expression;
     use rstest::{fixture, rstest};
 
     #[fixture]
-    fn validated_c_hgvs() -> ValidatedCHgvs {
-        ValidatedCHgvs::new_from_strs(
+    fn validated_c_hgvs() -> HgvsVariant {
+        HgvsVariant::new_from_strs(
             "hg38",
             "chr12",
             38332495,
@@ -378,14 +378,14 @@ mod tests {
 
     #[rstest]
     fn test_is_hgnc_id() {
-        assert!(ValidatedCHgvs::is_hgnc_id("HGNC:1234"));
-        assert!(!ValidatedCHgvs::is_hgnc_id("CLOCK"));
+        assert!(HgvsVariant::is_hgnc_id("HGNC:1234"));
+        assert!(!HgvsVariant::is_hgnc_id("CLOCK"));
     }
 
     #[rstest]
     fn test_get_allele_term_heterozygous() {
         let allele_term =
-            ValidatedCHgvs::get_allele_term(ChromosomalSex::XX, AlleleCount::Single, false, false)
+            HgvsVariant::get_allele_term(Sex::Female, AlleleCount::Single, false, false)
                 .unwrap();
         assert_eq!(allele_term.label, "heterozygous");
     }
@@ -393,15 +393,15 @@ mod tests {
     #[rstest]
     fn test_get_allele_term_heterozygous_on_x() {
         let allele_term =
-            ValidatedCHgvs::get_allele_term(ChromosomalSex::XX, AlleleCount::Single, true, false)
+            HgvsVariant::get_allele_term(Sex::Female, AlleleCount::Single, true, false)
                 .unwrap();
         assert_eq!(allele_term.label, "heterozygous");
     }
 
     #[rstest]
     fn test_get_allele_term_homozygous() {
-        let allele_term = ValidatedCHgvs::get_allele_term(
-            ChromosomalSex::Unknown,
+        let allele_term = HgvsVariant::get_allele_term(
+            Sex::Unknown,
             AlleleCount::Double,
             false,
             false,
@@ -413,7 +413,7 @@ mod tests {
     #[rstest]
     fn test_get_allele_term_hemizygous_on_x() {
         let allele_term =
-            ValidatedCHgvs::get_allele_term(ChromosomalSex::XYY, AlleleCount::Single, true, false)
+            HgvsVariant::get_allele_term(Sex::XYY, AlleleCount::Single, true, false)
                 .unwrap();
         assert_eq!(allele_term.label, "hemizygous");
     }
@@ -421,15 +421,15 @@ mod tests {
     #[rstest]
     fn test_get_allele_term_hemizygous_on_y() {
         let allele_term =
-            ValidatedCHgvs::get_allele_term(ChromosomalSex::XXY, AlleleCount::Single, false, true)
+            HgvsVariant::get_allele_term(Sex::XXY, AlleleCount::Single, false, true)
                 .unwrap();
         assert_eq!(allele_term.label, "hemizygous");
     }
 
     #[rstest]
     fn test_get_allele_term_unknown_on_x() {
-        let allele_term = ValidatedCHgvs::get_allele_term(
-            ChromosomalSex::Unknown,
+        let allele_term = HgvsVariant::get_allele_term(
+            Sex::Unknown,
             AlleleCount::Single,
             true,
             false,
@@ -440,8 +440,8 @@ mod tests {
 
     #[rstest]
     fn test_get_allele_term_unknown_on_y() {
-        let allele_term = ValidatedCHgvs::get_allele_term(
-            ChromosomalSex::Unknown,
+        let allele_term = HgvsVariant::get_allele_term(
+            Sex::Unknown,
             AlleleCount::Single,
             false,
             true,
@@ -452,8 +452,8 @@ mod tests {
 
     #[rstest]
     fn test_get_allele_term_unknown_not_on_x_or_y() {
-        let allele_term = ValidatedCHgvs::get_allele_term(
-            ChromosomalSex::Unknown,
+        let allele_term = HgvsVariant::get_allele_term(
+            Sex::Unknown,
             AlleleCount::Single,
             false,
             false,
@@ -464,8 +464,8 @@ mod tests {
 
     #[rstest]
     fn test_get_allele_term_on_x_and_y() {
-        let result = ValidatedCHgvs::get_allele_term(
-            ChromosomalSex::Unknown,
+        let result = HgvsVariant::get_allele_term(
+            Sex::Unknown,
             AlleleCount::Single,
             true,
             true,
@@ -476,14 +476,14 @@ mod tests {
     #[rstest]
     fn test_get_allele_term_not_enough_x_chromosomes() {
         let result =
-            ValidatedCHgvs::get_allele_term(ChromosomalSex::XY, AlleleCount::Double, true, false);
+            HgvsVariant::get_allele_term(Sex::Male, AlleleCount::Double, true, false);
         assert!(result.is_err());
     }
 
     #[rstest]
     fn test_create_variant_interpretation() {
         let vi = validated_c_hgvs()
-            .create_variant_interpretation(AlleleCount::Single, ChromosomalSex::Unknown)
+            .create_variant_interpretation(AlleleCount::Single, Sex::Unknown)
             .unwrap();
 
         let vi_allelic_state = vi
@@ -502,6 +502,6 @@ mod tests {
             .filter(|exp| exp.syntax == "hgvs.c")
             .collect::<Vec<&Expression>>();
         let c_hgvs_expression = c_hgvs_expressions.first().unwrap();
-        assert_eq!(c_hgvs_expression.value, validated_c_hgvs().c_hgvs);
+        assert_eq!(c_hgvs_expression.value, validated_c_hgvs().transcript_hgvs);
     }
 }
