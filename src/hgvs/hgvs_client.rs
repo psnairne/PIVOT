@@ -186,7 +186,6 @@ mod tests {
         let unvalidated_hgvs = "NM_001173464.1:c.2860C>T";
         let client = HGVSClient::default();
         let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
-        dbg!(&validated_hgvs);
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
@@ -195,7 +194,6 @@ mod tests {
         let unvalidated_hgvs = "NR_002196.1:n.601G>T";
         let client = HGVSClient::default();
         let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
-        dbg!(&validated_hgvs);
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
