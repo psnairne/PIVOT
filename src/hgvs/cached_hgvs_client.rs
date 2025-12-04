@@ -1,9 +1,11 @@
 #![allow(unused)]
+
 use crate::cache_structs_and_traits::cacher::Cacher;
 use crate::hgvs::error::HGVSError;
 use crate::hgvs::hgvs_client::HGVSClient;
+use crate::hgvs::hgvs_variant::HgvsVariant;
 use crate::hgvs::traits::HGVSData;
-use crate::hgvs::validated_c_hgvs::HgvsVariant;
+use std::path::PathBuf;
 
 pub struct CachedHGVSClient {
     cacher: Cacher<HgvsVariant>,
@@ -11,7 +13,8 @@ pub struct CachedHGVSClient {
 }
 
 impl CachedHGVSClient {
-    pub fn new(cacher: Cacher<HgvsVariant>, hgvs_client: HGVSClient) -> Result<Self, HGVSError> {
+    pub fn new(cache_file_path: PathBuf, hgvs_client: HGVSClient) -> Result<Self, HGVSError> {
+        let cacher = Cacher::new(cache_file_path);
         cacher.init_cache()?;
         Ok(CachedHGVSClient {
             cacher,
@@ -21,20 +24,17 @@ impl CachedHGVSClient {
 }
 
 impl HGVSData for CachedHGVSClient {
-    fn request_and_validate_hgvs(
-        &self,
-        unvalidated_c_hgvs: &str,
-    ) -> Result<HgvsVariant, HGVSError> {
+    fn request_and_validate_hgvs(&self, unvalidated_hgvs: &str) -> Result<HgvsVariant, HGVSError> {
         let cache = self.cacher.open_cache()?;
-        if let Some(validated_c_hgvs) = self.cacher.find_cache_entry(unvalidated_c_hgvs, &cache) {
-            return Ok(validated_c_hgvs);
+        if let Some(validated_hgvs) = self.cacher.find_cache_entry(unvalidated_hgvs, &cache) {
+            return Ok(validated_hgvs);
         }
 
-        let validated_c_hgvs = self
+        let validated_hgvs = self
             .hgvs_client
-            .request_and_validate_hgvs(unvalidated_c_hgvs)?;
-        self.cacher.cache_object(validated_c_hgvs.clone(), &cache)?;
-        Ok(validated_c_hgvs.clone())
+            .request_and_validate_hgvs(unvalidated_hgvs)?;
+        self.cacher.cache_object(validated_hgvs.clone(), &cache)?;
+        Ok(validated_hgvs.clone())
     }
 }
 
@@ -52,34 +52,28 @@ mod tests {
     }
 
     #[rstest]
-    fn test_request_and_validate_c_hgvs(temp_dir: TempDir) {
-        let unvalidated_c_hgvs = "NM_001173464.1:c.2860C>T";
+    fn test_request_and_validate_hgvs(temp_dir: TempDir) {
+        let unvalidated_hgvs = "NM_001173464.1:c.2860C>T";
         let cache_file_path = temp_dir.path().join("cache.hgvs");
-        let client =
-            CachedHGVSClient::new(Cacher::new(cache_file_path), HGVSClient::default()).unwrap();
+        let client = CachedHGVSClient::new(cache_file_path, HGVSClient::default()).unwrap();
 
-        let validated_c_hgvs = client
-            .request_and_validate_hgvs(unvalidated_c_hgvs)
-            .unwrap();
-        assert_eq!(validated_c_hgvs.transcript_hgvs(), unvalidated_c_hgvs);
+        let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
+        assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
     #[rstest]
     fn test_cache(temp_dir: TempDir) {
-        let unvalidated_c_hgvs = "NM_001173464.1:c.2860C>T";
+        let unvalidated_hgvs = "NM_001173464.1:c.2860C>T";
         let cache_file_path = temp_dir.path().join("cache.hgvs");
-        let client =
-            CachedHGVSClient::new(Cacher::new(cache_file_path), HGVSClient::default()).unwrap();
+        let client = CachedHGVSClient::new(cache_file_path, HGVSClient::default()).unwrap();
 
-        client
-            .request_and_validate_hgvs(unvalidated_c_hgvs)
-            .unwrap();
+        client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
 
         let cache = client.cacher.open_cache().unwrap();
         let cached_hgvs = client
             .cacher
-            .find_cache_entry(unvalidated_c_hgvs, &cache)
+            .find_cache_entry(unvalidated_hgvs, &cache)
             .unwrap();
-        assert_eq!(cached_hgvs.transcript_hgvs(), unvalidated_c_hgvs);
+        assert_eq!(cached_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 }

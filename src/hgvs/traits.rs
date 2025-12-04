@@ -1,10 +1,7 @@
 #![allow(unused)]
 use crate::hgvs::error::HGVSError;
-use crate::hgvs::validated_c_hgvs::HgvsVariant;
+use crate::hgvs::hgvs_variant::HgvsVariant;
 
 pub trait HGVSData {
-    fn request_and_validate_hgvs(
-        &self,
-        unvalidated_c_hgvs: &str,
-    ) -> Result<HgvsVariant, HGVSError>;
+    fn request_and_validate_hgvs(&self, unvalidated_hgvs: &str) -> Result<HgvsVariant, HGVSError>;
 }

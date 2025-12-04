@@ -1,11 +1,11 @@
-use std::fmt::{Debug, Formatter};
-
 use crate::cache_structs_and_traits::cacher::Cacher;
 use crate::hgnc::enums::GeneQuery;
 use crate::hgnc::error::HGNCError;
 use crate::hgnc::hgnc_client::HGNCClient;
 use crate::hgnc::json_schema::GeneDoc;
 use crate::hgnc::traits::HGNCData;
+use std::fmt::{Debug, Formatter};
+use std::path::PathBuf;
 
 #[derive(Default)]
 pub struct CachedHGNCClient {
@@ -27,7 +27,8 @@ impl HGNCData for CachedHGNCClient {
 }
 
 impl CachedHGNCClient {
-    pub fn new(cacher: Cacher<GeneDoc>, hgnc_client: HGNCClient) -> Result<Self, HGNCError> {
+    pub fn new(cache_file_path: PathBuf, hgnc_client: HGNCClient) -> Result<Self, HGNCError> {
+        let cacher = Cacher::new(cache_file_path);
         cacher.init_cache()?;
         Ok(CachedHGNCClient {
             cacher,
@@ -61,8 +62,7 @@ mod tests {
     fn test_cache(temp_dir: TempDir) {
         let symbol = "CLOCK";
         let cache_file_path = temp_dir.path().join("cache.hgnc");
-        let client =
-            CachedHGNCClient::new(Cacher::new(cache_file_path), HGNCClient::default()).unwrap();
+        let client = CachedHGNCClient::new(cache_file_path, HGNCClient::default()).unwrap();
 
         client.request_gene_data(GeneQuery::Symbol(symbol)).unwrap();
 
@@ -81,8 +81,7 @@ mod tests {
         temp_dir: TempDir,
     ) {
         let cache_file_path = temp_dir.path().join("cache.hgnc");
-        let client =
-            CachedHGNCClient::new(Cacher::new(cache_file_path), HGNCClient::default()).unwrap();
+        let client = CachedHGNCClient::new(cache_file_path, HGNCClient::default()).unwrap();
 
         let gene_doc = client.request_gene_identifier_pair(query).unwrap();
 

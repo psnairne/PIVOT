@@ -106,6 +106,14 @@ mod tests {
     }
 
     #[rstest]
+    fn test_request_gene_dataasd() {
+        let client = HGNCClient::default();
+
+        let gene_doc = client.request_gene_data(GeneQuery::Symbol("ZNF3")).unwrap();
+        dbg!(&gene_doc);
+    }
+
+    #[rstest]
     #[case(GeneQuery::Symbol("ZNF3"), ("ZNF3", "HGNC:13089"))]
     #[case(GeneQuery::HgncId("HGNC:13089"), ("ZNF3", "HGNC:13089"))]
     fn test_request_gene_identifier_pair(
@@ -122,21 +130,17 @@ mod tests {
 
     #[rstest]
     fn test_request_hgnc_id() {
-        let symbol = "CLOCK";
         let client = HGNCClient::default();
-
-        let hgnc_id = client.request_hgnc_id(symbol).unwrap();
-
+        let hgnc_id = client.request_hgnc_id(GeneQuery::Symbol("CLOCK")).unwrap();
         assert_eq!(hgnc_id.as_str(), "HGNC:2082");
     }
 
     #[rstest]
     fn test_request_gene_symbol() {
-        let hgnc_id = "HGNC:2082";
         let client = HGNCClient::default();
-
-        let gene_symbol = client.request_gene_symbol(hgnc_id).unwrap();
-
+        let gene_symbol = client
+            .request_gene_symbol(GeneQuery::HgncId("HGNC:2082"))
+            .unwrap();
         assert_eq!(gene_symbol.as_str(), "CLOCK");
     }
 }

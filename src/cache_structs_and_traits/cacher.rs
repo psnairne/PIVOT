@@ -1,6 +1,6 @@
 use crate::cache_structs_and_traits::error::CacherError;
-use crate::hgnc::json_schema::GeneDoc;
-use crate::hgvs::validated_c_hgvs::HgvsVariant;
+use crate::hgnc::GeneDoc;
+use crate::hgvs::HgvsVariant;
 use directories::ProjectDirs;
 use redb::{
     Database as RedbDatabase, Database, DatabaseError, ReadableDatabase, TableDefinition, TypeName,
@@ -41,8 +41,9 @@ macro_rules! implement_value_for_local_type {
     };
 }
 
-implement_value_for_local_type!(HgvsVariant);
 implement_value_for_local_type!(GeneDoc);
+
+implement_value_for_local_type!(HgvsVariant);
 
 // for<'a> Self: From<Self::SelfType<'a>> is required so that cache_entry.value().into() works
 // for<'a> Self: Borrow<Self::SelfType<'a>> is required so that table.insert(key, object_to_cache.clone())?; works
@@ -114,12 +115,6 @@ impl<T: Cacheable> Cacher<T> {
         }
         write_txn.commit()?;
         Ok(())
-    }
-
-    pub fn with_cache_dir(mut self, cache_dir: PathBuf) -> Result<Self, CacherError> {
-        self.cache_file_path = cache_dir.clone();
-        self.init_cache()?;
-        Ok(self)
     }
 
     pub fn open_cache(&self) -> Result<RedbDatabase, DatabaseError> {

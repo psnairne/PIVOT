@@ -157,8 +157,7 @@ mod tests {
     #[test]
     fn test_request_hgnc_id_success() {
         let mock = setup_mock();
-        let result = mock.request_hgnc_id("BRCA1");
-
+        let result = mock.request_hgnc_id(GeneQuery::HgncId("BRCA1"));
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "HGNC:1100");
     }
@@ -166,8 +165,9 @@ mod tests {
     #[test]
     fn test_request_gene_symbol_success() {
         let mock = setup_mock();
-        let result = mock.request_gene_symbol("HGNC:1100").unwrap();
-
+        let result = mock
+            .request_gene_symbol(GeneQuery::HgncId("HGNC:1100"))
+            .unwrap();
         assert_eq!(result, "BRCA1");
     }
 

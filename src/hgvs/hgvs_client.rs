@@ -1,10 +1,12 @@
 #![allow(unused)]
 use crate::hgvs::error::HGVSError;
+use crate::hgvs::hgvs_variant::HgvsVariant;
 use crate::hgvs::json_schema::VariantValidatorResponse;
 use crate::hgvs::traits::HGVSData;
-use crate::hgvs::validated_c_hgvs::HgvsVariant;
+use crate::hgvs::utils::{is_c_hgvs, is_n_hgvs};
 use ratelimit::Ratelimiter;
 use reqwest::blocking::Client;
+use serde_json::Value;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -85,12 +87,9 @@ impl HGVSClient {
 }
 
 impl HGVSData for HGVSClient {
-    fn request_and_validate_hgvs(
-        &self,
-        unvalidated_hgvs: &str,
-    ) -> Result<HgvsVariant, HGVSError> {
+    fn request_and_validate_hgvs(&self, unvalidated_hgvs: &str) -> Result<HgvsVariant, HGVSError> {
         let (transcript, allele) = Self::get_transcript_and_allele(unvalidated_hgvs)?;
-        if !Self::validate_is_c_hgvs(allele) && !Self::validate_is_n_hgvs(allele) {
+        if !is_c_hgvs(allele) && !is_n_hgvs(allele) {
             return Err(HGVSError::HgvsFormatNotAccepted {
                 hgvs: unvalidated_hgvs.to_string(),
                 problem: "Allele did not begin with c. or n.".to_string(),
@@ -140,7 +139,7 @@ impl HGVSData for HGVSClient {
             Some(variant_info.hgvs_predicted_protein_consequence.tlr)
         };
 
-        let validated_c_hgvs = HgvsVariant::new(
+        let validated_hgvs = HgvsVariant::new(
             self.genome_assembly.clone(),
             assembly.vcf.chr,
             position,
@@ -154,7 +153,7 @@ impl HGVSData for HGVSClient {
             assembly.hgvs_genomic_description,
             p_hgvs,
         );
-        Ok(validated_c_hgvs)
+        Ok(validated_hgvs)
     }
 }
 
@@ -173,31 +172,30 @@ impl HGVSClient {
             Ok((transcript, allele))
         }
     }
-
-    fn validate_is_c_hgvs(allele: &str) -> bool {
-        allele.starts_with("c.")
-    }
-
-    fn validate_is_n_hgvs(allele: &str) -> bool {
-        allele.starts_with("n.")
-    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::hgnc::enums::GeneQuery;
     use crate::hgvs::error::HGVSError;
     use crate::hgvs::hgvs_client::HGVSClient;
     use crate::hgvs::traits::HGVSData;
     use rstest::rstest;
 
     #[rstest]
-    fn test_request_and_validate_hgvs() {
+    fn test_request_and_validate_hgvs_c() {
         let unvalidated_hgvs = "NM_001173464.1:c.2860C>T";
         let client = HGVSClient::default();
-        let validated_hgvs = client
-            .request_and_validate_hgvs(unvalidated_hgvs)
-            .unwrap();
+        let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
+        dbg!(&validated_hgvs);
+        assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
+    }
+
+    #[rstest]
+    fn test_request_and_validate_hgvs_n() {
+        let unvalidated_hgvs = "NR_002196.1:n.601G>T";
+        let client = HGVSClient::default();
+        let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
+        dbg!(&validated_hgvs);
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 

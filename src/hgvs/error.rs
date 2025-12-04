@@ -1,5 +1,5 @@
 use crate::cache_structs_and_traits::error::CacherError;
-use crate::hgvs::enums::{AlleleCount, Sex};
+use crate::hgvs::enums::{AlleleCount, ChromosomalSex};
 use redb::{CommitError, DatabaseError, StorageError, TableError, TransactionError};
 use thiserror::Error;
 
@@ -40,7 +40,7 @@ pub enum HGVSError {
         "The following data for a HGVS was contradictory: Chromosomal Sex: {chromosomal_sex:?}, AlleleCount: {allele_count:?}, is_x: {is_x}, is_y: {is_y}"
     )]
     ContradictoryAllelicData {
-        chromosomal_sex: Sex,
+        chromosomal_sex: ChromosomalSex,
         allele_count: AlleleCount,
         is_x: bool,
         is_y: bool,

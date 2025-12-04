@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// The variant_info HashMap will contain a single pair of the form
-/// unvalidated_c_hgvs -> SingleVariantInfo
+/// unvalidated_hgvs -> SingleVariantInfo
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VariantValidatorResponse {
     #[serde(flatten)]
@@ -53,7 +53,7 @@ pub struct Annotations {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DbXref {
     #[serde(rename = "CCDS")]
-    pub ccds: String,
+    pub ccds: Option<String>,
     pub ensemblgene: Option<serde_json::Value>, // Uncertain format
     pub hgnc: String,
     pub ncbigene: String,
@@ -95,8 +95,6 @@ pub struct VcfCoordinates {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ReferenceSequenceRecords {
-    pub protein: String,
-    pub refseqgene: String,
     pub transcript: String,
 }
 
