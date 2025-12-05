@@ -59,7 +59,7 @@
 //! let temp_dir = tempfile::tempdir().expect("Failed to create temporary directory");
 //! let cache_file_path = temp_dir.path().join("cache.hgnc");
 //!
-//! let client = CachedHGNCClient::new("cache.hgnc".into(), HGNCClient::default()).unwrap();
+//! let client = CachedHGNCClient::new(cache_file_path, HGNCClient::default()).unwrap();
 //! let gene_doc = client.request_gene_data(GeneQuery::HgncId("HGNC:13089")).unwrap();
 //! let expected_location = Some("7q22.1".to_string());
 //! assert_eq!(gene_doc.location,expected_location);
