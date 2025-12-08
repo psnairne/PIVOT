@@ -5,7 +5,7 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum HGVSError {
-    #[error("Problem {problem} in found HGVS: {hgvs} ")]
+    #[error("Hgvs string {hgvs} not accepted due to format problem: {problem}.")]
     HgvsFormatNotAccepted { hgvs: String, problem: String },
     #[error(
         "VariantValidator response for {hgvs} did not have flag gene_variant. The flag was {flag} instead. "

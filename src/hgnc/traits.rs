@@ -6,17 +6,30 @@ pub trait HGNCData {
     fn request_gene_data(&self, query: GeneQuery) -> Result<GeneDoc, HGNCError>;
     fn request_hgnc_id(&self, query: GeneQuery) -> Result<String, HGNCError> {
         let doc = self.request_gene_data(query)?;
-        Ok(doc.hgnc_id_owned())
+        doc.hgnc_id_owned()
+            .ok_or_else(|| HGNCError::MissingElementInDocument {
+                desired_element: "HGNC ID".to_string(),
+            })
     }
     fn request_gene_symbol(&self, query: GeneQuery) -> Result<String, HGNCError> {
         let doc = self.request_gene_data(query)?;
-        Ok(doc.symbol_owned())
+        doc.symbol_owned()
+            .ok_or_else(|| HGNCError::MissingElementInDocument {
+                desired_element: "symbol".to_string(),
+            })
     }
     fn request_gene_identifier_pair(
         &self,
         query: GeneQuery,
     ) -> Result<(String, String), HGNCError> {
         let doc = self.request_gene_data(query)?;
-        Ok(doc.symbol_id_pair())
+        let (symbol, id) = doc.symbol_id_pair();
+        let symbol = symbol.ok_or_else(|| HGNCError::MissingElementInDocument {
+            desired_element: "symbol".to_string(),
+        })?;
+        let id = id.ok_or_else(|| HGNCError::MissingElementInDocument {
+            desired_element: "HGNC ID".to_string(),
+        })?;
+        Ok((symbol, id))
     }
 }

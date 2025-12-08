@@ -26,7 +26,7 @@ pub struct SingleVariantInfo {
     pub hgvs_transcript_variant: String,
     pub lovd_corrections: Option<serde_json::Value>, // Uncertain format
     pub lovd_messages: Option<serde_json::Value>,    // Uncertain format
-    pub primary_assembly_loci: HashMap<String, GenomeAssembly>,
+    pub primary_assembly_loci: HashMap<String, PrimaryAssemblyLoci>,
     pub reference_sequence_records: ReferenceSequenceRecords,
     pub refseqgene_context_intronic_sequence: String,
     pub rna_variant_descriptions: Option<serde_json::Value>, // Uncertain format
@@ -79,7 +79,7 @@ pub struct PredictedProteinConsequence {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GenomeAssembly {
+pub struct PrimaryAssemblyLoci {
     pub hgvs_genomic_description: String,
     pub vcf: VcfCoordinates,
 }

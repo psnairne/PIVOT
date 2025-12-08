@@ -1,4 +1,5 @@
 #![allow(unused)]
+use crate::hgvs::enums::GenomeAssembly;
 use crate::hgvs::error::HGVSError;
 use crate::hgvs::hgvs_variant::HgvsVariant;
 use crate::hgvs::json_schema::VariantValidatorResponse;
@@ -10,19 +11,17 @@ use serde_json::Value;
 use std::thread::sleep;
 use std::time::Duration;
 
-const GENOME_ASSEMBLY_HG38: &str = "hg38";
-
 pub struct HGVSClient {
     rate_limiter: Ratelimiter,
     api_url: String,
     client: Client,
-    genome_assembly: String,
+    genome_assembly: GenomeAssembly,
 }
 
 impl Default for HGVSClient {
     fn default() -> Self {
-        let rate_limiter = Ratelimiter::builder(10, Duration::from_secs(1))
-            .max_tokens(10)
+        let rate_limiter = Ratelimiter::builder(2, Duration::from_secs(1))
+            .max_tokens(2)
             .build()
             .expect("Building rate limiter failed");
         let api_url =
@@ -31,7 +30,7 @@ impl Default for HGVSClient {
             rate_limiter,
             api_url.to_string(),
             Client::new(),
-            GENOME_ASSEMBLY_HG38.to_string(),
+            GenomeAssembly::Hg38,
         )
     }
 }
@@ -41,7 +40,7 @@ impl HGVSClient {
         rate_limiter: Ratelimiter,
         api_url: String,
         client: Client,
-        genome_assembly: String,
+        genome_assembly: GenomeAssembly,
     ) -> Self {
         HGVSClient {
             rate_limiter,
@@ -112,10 +111,10 @@ impl HGVSData for HGVSClient {
         let assemblies = variant_info.primary_assembly_loci;
 
         let assembly = assemblies
-            .get(&self.genome_assembly)
+            .get(&self.genome_assembly.to_string())
             .ok_or_else(|| HGVSError::GenomeAssemblyNotFound {
                 hgvs: unvalidated_hgvs.to_string(),
-                desired_assembly: self.genome_assembly.clone(),
+                desired_assembly: self.genome_assembly.to_string(),
                 found_assemblies: assemblies.keys().cloned().collect::<Vec<String>>(),
             })?
             .clone();
@@ -140,7 +139,7 @@ impl HGVSData for HGVSClient {
         };
 
         let validated_hgvs = HgvsVariant::new(
-            self.genome_assembly.clone(),
+            self.genome_assembly.to_string(),
             assembly.vcf.chr,
             position,
             assembly.vcf.reference,
@@ -159,14 +158,14 @@ impl HGVSData for HGVSClient {
 
 impl HGVSClient {
     fn get_transcript_and_allele(unvalidated_hgvs: &str) -> Result<(&str, &str), HGVSError> {
-        let colon_count = unvalidated_hgvs.matches(':').count();
+        let split_hgvs = unvalidated_hgvs.split(':').collect::<Vec<&str>>();
+        let colon_count = split_hgvs.len() - 1;
         if colon_count != 1 {
             Err(HGVSError::HgvsFormatNotAccepted {
                 hgvs: unvalidated_hgvs.to_string(),
                 problem: "There must be exactly one colon in a HGVS string.".to_string(),
             })
         } else {
-            let split_hgvs = unvalidated_hgvs.split(':').collect::<Vec<&str>>();
             let transcript = split_hgvs[0];
             let allele = split_hgvs[1];
             Ok((transcript, allele))

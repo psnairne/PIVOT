@@ -1,14 +1,17 @@
 use crate::caching::error::CacherError;
+use crate::caching::traits::Cacheable;
 use crate::hgnc::GeneDoc;
 use crate::hgvs::HgvsVariant;
 use directories::ProjectDirs;
-use redb::{Database as RedbDatabase, Database, DatabaseError, ReadableDatabase, TableDefinition, TypeName, Value};
+use redb::{
+    Database as RedbDatabase, Database, DatabaseError, ReadableDatabase, TableDefinition, TypeName,
+    Value,
+};
 use std::any::type_name;
 use std::env::home_dir;
 use std::fs;
 use std::marker::PhantomData;
 use std::path::PathBuf;
-use crate::caching::traits::Cacheable;
 
 macro_rules! implement_value_for_local_type {
     ($type_name:ty) => {
@@ -50,7 +53,14 @@ impl Cacheable for HgvsVariant {
 
 impl Cacheable for GeneDoc {
     fn keys(&self) -> Vec<&str> {
-        vec![self.symbol(), self.hgnc_id()]
+        let mut keys = vec![];
+        if let Some(symbol) = self.symbol() {
+            keys.push(symbol);
+        }
+        if let Some(id) = self.hgnc_id() {
+            keys.push(id);
+        }
+        keys
     }
 }
 
@@ -123,7 +133,11 @@ impl<T: Cacheable> RedbCacher<T> {
         None
     }
 
-    pub(crate) fn cache_object(&self, object_to_cache: T, cache: &Database) -> Result<(), CacherError> {
+    pub(crate) fn cache_object(
+        &self,
+        object_to_cache: T,
+        cache: &Database,
+    ) -> Result<(), CacherError> {
         let cache_writer = cache.begin_write()?;
         {
             let mut table = cache_writer.open_table(Self::table_definition())?;

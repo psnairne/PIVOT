@@ -42,63 +42,32 @@ pub struct HgvsVariant {
 impl HgvsVariant {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        assembly: String,
-        chr: String,
+        assembly: impl Into<String>,
+        chr: impl Into<String>,
         position: u32,
-        ref_allele: String,
-        alt_allele: String,
-        symbol: String,
-        hgnc_id: String,
-        transcript: String,
-        allele: String,
-        transcript_hgvs: String,
-        g_hgvs: String,
-        p_hgvs: Option<String>,
+        ref_allele: impl Into<String>,
+        alt_allele: impl Into<String>,
+        symbol: impl Into<String>,
+        hgnc_id: impl Into<String>,
+        transcript: impl Into<String>,
+        allele: impl Into<String>,
+        transcript_hgvs: impl Into<String>,
+        g_hgvs: impl Into<String>,
+        p_hgvs: Option<impl Into<String>>,
     ) -> Self {
         HgvsVariant {
-            assembly,
-            chr,
+            assembly: assembly.into(),
+            chr: chr.into(),
             position,
-            ref_allele,
-            alt_allele,
-            symbol,
-            hgnc_id,
-            transcript,
-            allele,
-            transcript_hgvs,
-            g_hgvs,
-            p_hgvs,
-        }
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn new_from_strs(
-        assembly: &str,
-        chr: &str,
-        position: u32,
-        ref_allele: &str,
-        alt_allele: &str,
-        hgnc_id: &str,
-        symbol: &str,
-        transcript: &str,
-        allele: &str,
-        transcript_hgvs: &str,
-        g_hgvs: &str,
-        p_hgvs: Option<&str>,
-    ) -> Self {
-        HgvsVariant {
-            assembly: assembly.to_string(),
-            chr: chr.to_string(),
-            position,
-            ref_allele: ref_allele.to_string(),
-            alt_allele: alt_allele.to_string(),
-            hgnc_id: hgnc_id.to_string(),
-            symbol: symbol.to_string(),
-            transcript: transcript.to_string(),
-            allele: allele.to_string(),
-            transcript_hgvs: transcript_hgvs.to_string(),
-            g_hgvs: g_hgvs.to_string(),
-            p_hgvs: p_hgvs.map(|v| v.to_string()),
+            ref_allele: ref_allele.into(),
+            alt_allele: alt_allele.into(),
+            symbol: symbol.into(),
+            hgnc_id: hgnc_id.into(),
+            transcript: transcript.into(),
+            allele: allele.into(),
+            transcript_hgvs: transcript_hgvs.into(),
+            g_hgvs: g_hgvs.into(),
+            p_hgvs: p_hgvs.map(|s|s.into()),
         }
     }
 
@@ -251,7 +220,7 @@ impl HgvsVariant {
                 label: "homozygous".to_string(),
             }),
             (_, AlleleCount::Single, false, false) => Ok(OntologyClass {
-                id: "GENO:0000136".to_string(),
+                id: "GENO:0000135".to_string(),
                 label: "heterozygous".to_string(),
             }),
             // variants on x-chromosome
@@ -273,7 +242,7 @@ impl HgvsVariant {
                 true,
                 false,
             ) => Ok(OntologyClass {
-                id: "GENO:0000136".to_string(),
+                id: "GENO:0000135".to_string(),
                 label: "heterozygous".to_string(),
             }),
             (
@@ -282,7 +251,7 @@ impl HgvsVariant {
                 true,
                 false,
             ) => Ok(OntologyClass {
-                id: "GENO:0000136".to_string(),
+                id: "GENO:0000134".to_string(),
                 label: "hemizygous".to_string(),
             }),
             (ChromosomalSex::Unknown, AlleleCount::Single, true, false) => Ok(OntologyClass {
@@ -297,12 +266,12 @@ impl HgvsVariant {
                 })
             }
             (ChromosomalSex::XYY, AlleleCount::Single, false, true) => Ok(OntologyClass {
-                id: "GENO:0000136".to_string(),
+                id: "GENO:0000135".to_string(),
                 label: "heterozygous".to_string(),
             }),
             (ChromosomalSex::XY | ChromosomalSex::XXY, AlleleCount::Single, false, true) => {
                 Ok(OntologyClass {
-                    id: "GENO:0000136".to_string(),
+                    id: "GENO:0000134".to_string(),
                     label: "hemizygous".to_string(),
                 })
             }
@@ -356,7 +325,7 @@ mod tests {
 
     #[fixture]
     fn validated_c_hgvs() -> HgvsVariant {
-        HgvsVariant::new_from_strs(
+        HgvsVariant::new(
             "hg38",
             "chr12",
             38332495,
@@ -374,7 +343,7 @@ mod tests {
 
     #[fixture]
     fn validated_n_hgvs() -> HgvsVariant {
-        HgvsVariant::new_from_strs(
+        HgvsVariant::new(
             "hg38",
             "chr11",
             1997235,
@@ -386,7 +355,7 @@ mod tests {
             "n.601G>T",
             "NR_002196.1:n.601G>T",
             "NC_000011.10:g.1997235C>A",
-            None,
+            None::<&str>,
         )
     }
 

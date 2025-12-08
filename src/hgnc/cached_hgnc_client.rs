@@ -68,8 +68,8 @@ mod tests {
 
         let cache = client.cacher.open_cache().unwrap();
         let cached_gene_doc = client.cacher.find_cache_entry(symbol, &cache).unwrap();
-        assert_eq!(cached_gene_doc.symbol, symbol);
-        assert_eq!(cached_gene_doc.hgnc_id, "HGNC:2082");
+        assert_eq!(cached_gene_doc.symbol, Some(symbol.to_string()));
+        assert_eq!(cached_gene_doc.hgnc_id, Some("HGNC:2082".to_string()));
     }
 
     #[rstest]

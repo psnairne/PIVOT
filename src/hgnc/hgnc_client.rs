@@ -68,7 +68,6 @@ impl Default for HGNCClient {
             .expect("Building rate limiter failed");
 
         HGNCClient::new(rate_limiter, "https://rest.genenames.org/".to_string())
-
     }
 }
 
@@ -98,8 +97,8 @@ mod tests {
 
         let gene_doc = client.request_gene_data(query).unwrap();
 
-        assert_eq!(gene_doc.hgnc_id, expected_hgnc_id);
-        assert_eq!(gene_doc.symbol, expected_symbol);
+        assert_eq!(gene_doc.hgnc_id, Some(expected_hgnc_id));
+        assert_eq!(gene_doc.symbol, Some(expected_symbol));
     }
 
     #[rstest]

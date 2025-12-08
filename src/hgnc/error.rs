@@ -13,7 +13,7 @@ pub enum HGNCError {
         n_expected: usize,
     },
     #[error("No {desired_element} found in GeneDoc.")]
-    MissingElementInDocument { desired_element: usize },
+    MissingElementInDocument { desired_element: String },
     #[error("Cant establish caching dir {0}")]
     CannotEstablishCacheDir(String),
     #[error(transparent)]

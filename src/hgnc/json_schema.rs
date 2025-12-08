@@ -33,7 +33,7 @@ pub struct GeneDoc {
     #[serde(default)]
     pub orphanet: Option<i64>,
     #[serde(default)]
-    pub hgnc_id: String,
+    pub hgnc_id: Option<String>,
     #[serde(default)]
     pub pubmed_id: Vec<i64>,
     #[serde(default)]
@@ -91,7 +91,7 @@ pub struct GeneDoc {
     #[serde(default)]
     pub vega_id: Option<String>,
     #[serde(default)]
-    pub symbol: String,
+    pub symbol: Option<String>,
 }
 
 impl GeneDoc {
@@ -99,33 +99,33 @@ impl GeneDoc {
         Self::default()
     }
 
-    pub fn hgnc_id_owned(&self) -> String {
+    pub fn hgnc_id_owned(&self) -> Option<String> {
         self.hgnc_id.clone()
     }
 
-    pub fn hgnc_id(&self) -> &str {
-        self.hgnc_id.as_str()
+    pub fn hgnc_id(&self) -> Option<&str> {
+        self.hgnc_id.as_deref()
     }
 
-    pub fn symbol_owned(&self) -> String {
+    pub fn symbol_owned(&self) -> Option<String> {
         self.symbol.clone()
     }
 
-    pub fn symbol(&self) -> &str {
-        self.symbol.as_str()
+    pub fn symbol(&self) -> Option<&str> {
+        self.symbol.as_deref()
     }
 
-    pub fn symbol_id_pair(&self) -> (String, String) {
+    pub fn symbol_id_pair(&self) -> (Option<String>, Option<String>) {
         (self.symbol_owned(), self.hgnc_id_owned())
     }
 
-    pub fn change_hgnc_id(mut self, hgnc_id: impl Into<String>) -> Self {
-        self.hgnc_id = hgnc_id.into();
+    pub fn with_hgnc_id(mut self, hgnc_id: impl Into<String>) -> Self {
+        self.hgnc_id = Some(hgnc_id.into());
         self
     }
 
-    pub fn change_symbol(mut self, symbol: impl Into<String>) -> Self {
-        self.symbol = symbol.into();
+    pub fn with_symbol(mut self, symbol: impl Into<String>) -> Self {
+        self.symbol = Some(symbol.into());
         self
     }
 }

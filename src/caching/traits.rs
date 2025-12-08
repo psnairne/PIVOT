@@ -1,6 +1,5 @@
-use std::any::type_name;
+use redb::Value;
 use std::borrow::Borrow;
-use redb::{TableDefinition, Value};
 
 /// If an object implements Cacheable then a RedbCacher can be constructed for it.
 ///
@@ -8,9 +7,8 @@ use redb::{TableDefinition, Value};
 /// - for<'a> Self: Borrow<Self::SelfType<'a>> is required so that table.insert(key, object_to_cache.clone())?; works
 pub trait Cacheable: Sized + Clone + Value + 'static
 where
-        for<'a> Self: From<Self::SelfType<'a>>,
-        for<'a> Self: Borrow<Self::SelfType<'a>>,
+    for<'a> Self: From<Self::SelfType<'a>>,
+    for<'a> Self: Borrow<Self::SelfType<'a>>,
 {
     fn keys(&self) -> Vec<&str>;
-
 }
