@@ -68,6 +68,8 @@ fn test_hgvs_client() {
     let different_hgvs_variant = HgvsVariant::default();
     assert_ne!(hgvs_variant, different_hgvs_variant);
 
+    hgvs_variant.validate_against_gene("KIF21A").unwrap();
+
     let vi = hgvs_variant
         .create_variant_interpretation(AlleleCount::Single, ChromosomalSex::XX)
         .unwrap();
