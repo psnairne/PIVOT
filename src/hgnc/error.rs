@@ -1,4 +1,4 @@
-use crate::cache_structs_and_traits::error::CacherError;
+use crate::caching::error::CacherError;
 use redb::{CommitError, DatabaseError, StorageError, TableError, TransactionError};
 use thiserror::Error;
 

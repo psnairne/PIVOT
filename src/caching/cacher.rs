@@ -1,17 +1,17 @@
-use crate::cache_structs_and_traits::error::CacherError;
+use crate::caching::error::CacherError;
 use crate::hgnc::GeneDoc;
 use crate::hgvs::HgvsVariant;
 use directories::ProjectDirs;
 use redb::{
-    Database as RedbDatabase, Database, DatabaseError, ReadableDatabase, TableDefinition, TypeName,
+    Database as RedbDatabase, Database, DatabaseError, ReadableDatabase, TypeName,
     Value,
 };
 use std::any::type_name;
-use std::borrow::Borrow;
 use std::env::home_dir;
 use std::fs;
 use std::marker::PhantomData;
 use std::path::PathBuf;
+use crate::caching::traits::Cacheable;
 
 macro_rules! implement_value_for_local_type {
     ($type_name:ty) => {
@@ -44,20 +44,6 @@ macro_rules! implement_value_for_local_type {
 implement_value_for_local_type!(GeneDoc);
 
 implement_value_for_local_type!(HgvsVariant);
-
-// for<'a> Self: From<Self::SelfType<'a>> is required so that cache_entry.value().into() works
-// for<'a> Self: Borrow<Self::SelfType<'a>> is required so that table.insert(key, object_to_cache.clone())?; works
-pub trait Cacheable: Sized + Clone + Value + 'static
-where
-    for<'a> Self: From<Self::SelfType<'a>>,
-    for<'a> Self: Borrow<Self::SelfType<'a>>,
-{
-    fn keys(&self) -> Vec<&str>;
-
-    fn table_definition() -> TableDefinition<'static, &'static str, Self> {
-        TableDefinition::new(type_name::<Self>())
-    }
-}
 
 impl Cacheable for HgvsVariant {
     fn keys(&self) -> Vec<&str> {

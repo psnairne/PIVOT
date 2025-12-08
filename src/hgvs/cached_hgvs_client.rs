@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use crate::cache_structs_and_traits::cacher::Cacher;
+use crate::caching::cacher::Cacher;
 use crate::hgvs::error::HGVSError;
 use crate::hgvs::hgvs_client::HGVSClient;
 use crate::hgvs::hgvs_variant::HgvsVariant;
@@ -41,7 +41,7 @@ impl HGVSData for CachedHGVSClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cache_structs_and_traits::cacher::Cacheable;
+    use crate::caching::traits::Cacheable;
     use redb::{Database as RedbDatabase, ReadableDatabase};
     use rstest::{fixture, rstest};
     use tempfile::TempDir;

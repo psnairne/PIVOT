@@ -1,4 +1,4 @@
-use crate::cache_structs_and_traits::cacher::Cacher;
+use crate::caching::cacher::Cacher;
 use crate::hgnc::enums::GeneQuery;
 use crate::hgnc::error::HGNCError;
 use crate::hgnc::hgnc_client::HGNCClient;

@@ -16,6 +16,6 @@
 //!
 //! - There is also functionality for creating a Phenopacket VariantInterpretation from a HgvsVariant object and data on allele count and chromosomal sex.
 
-mod cache_structs_and_traits;
+mod caching;
 pub mod hgnc;
 pub mod hgvs;
