@@ -2,10 +2,7 @@ use crate::caching::error::CacherError;
 use crate::hgnc::GeneDoc;
 use crate::hgvs::HgvsVariant;
 use directories::ProjectDirs;
-use redb::{
-    Database as RedbDatabase, Database, DatabaseError, ReadableDatabase, TypeName,
-    Value,
-};
+use redb::{Database as RedbDatabase, Database, DatabaseError, ReadableDatabase, TableDefinition, TypeName, Value};
 use std::any::type_name;
 use std::env::home_dir;
 use std::fs;
@@ -57,58 +54,67 @@ impl Cacheable for GeneDoc {
     }
 }
 
-pub struct Cacher<T: Cacheable> {
+/// Given an object T that implements Cacheable,
+/// the RedbCacher will be able to cache instances of T to a RedbDatabase at cache_file_path.
+///
+/// NOTE: in the RedbDatabase, a single table will be automatically constructed for the type T.
+/// If the user would like to have multiple caches of type T, then a different file path would have to be used.
+pub(crate) struct RedbCacher<T: Cacheable> {
     cache_file_path: PathBuf,
     _phantom: PhantomData<T>,
 }
 
-impl<T: Cacheable> Default for Cacher<T> {
+impl<T: Cacheable> Default for RedbCacher<T> {
     fn default() -> Self {
         let pkg_name = env!("CARGO_PKG_NAME");
 
-        let phenox_cache_dir = ProjectDirs::from("", "", pkg_name)
+        let pivot_cache_dir = ProjectDirs::from("", "", pkg_name)
             .map(|project_dir| project_dir.cache_dir().to_path_buf())
             .or_else(|| home_dir().map(|home| home.join(pkg_name)))
             .unwrap_or_else(|| panic!("Could not find cache directory or home directory."));
 
-        if !phenox_cache_dir.exists() {
-            fs::create_dir_all(&phenox_cache_dir)
+        if !pivot_cache_dir.exists() {
+            fs::create_dir_all(&pivot_cache_dir)
                 .expect("Failed to create default cache directory.");
         }
 
-        Cacher::new(phenox_cache_dir.join(type_name::<T>()))
+        RedbCacher::new(pivot_cache_dir.join(type_name::<T>()))
     }
 }
 
-impl<T: Cacheable> Cacher<T> {
-    pub fn new(cache_file_path: PathBuf) -> Self {
-        Cacher {
+impl<T: Cacheable> RedbCacher<T> {
+    pub(crate) fn new(cache_file_path: PathBuf) -> Self {
+        RedbCacher {
             cache_file_path,
             _phantom: PhantomData,
         }
     }
 
-    pub fn cache_file_path(&self) -> &PathBuf {
+    fn table_definition() -> TableDefinition<'static, &'static str, T> {
+        TableDefinition::new(type_name::<T>())
+    }
+
+    pub(crate) fn cache_file_path(&self) -> &PathBuf {
         &self.cache_file_path
     }
 
-    pub fn init_cache(&self) -> Result<(), CacherError> {
+    pub(crate) fn init_cache(&self) -> Result<(), CacherError> {
         let cache = RedbDatabase::create(self.cache_file_path.clone())?;
 
         let write_txn = cache.begin_write()?;
         {
-            write_txn.open_table(T::table_definition())?;
+            write_txn.open_table(Self::table_definition())?;
         }
         write_txn.commit()?;
         Ok(())
     }
 
-    pub fn open_cache(&self) -> Result<RedbDatabase, DatabaseError> {
+    pub(crate) fn open_cache(&self) -> Result<RedbDatabase, DatabaseError> {
         RedbDatabase::open(&self.cache_file_path)
     }
-    pub fn find_cache_entry(&self, query: &str, cache: &Database) -> Option<T> {
+    pub(crate) fn find_cache_entry(&self, query: &str, cache: &Database) -> Option<T> {
         let cache_reader = cache.begin_read().ok()?;
-        let table = cache_reader.open_table(T::table_definition()).ok()?;
+        let table = cache_reader.open_table(Self::table_definition()).ok()?;
 
         if let Ok(Some(cache_entry)) = table.get(query) {
             return Some(cache_entry.value().into());
@@ -117,10 +123,10 @@ impl<T: Cacheable> Cacher<T> {
         None
     }
 
-    pub fn cache_object(&self, object_to_cache: T, cache: &Database) -> Result<(), CacherError> {
+    pub(crate) fn cache_object(&self, object_to_cache: T, cache: &Database) -> Result<(), CacherError> {
         let cache_writer = cache.begin_write()?;
         {
-            let mut table = cache_writer.open_table(T::table_definition())?;
+            let mut table = cache_writer.open_table(Self::table_definition())?;
             for key in object_to_cache.keys() {
                 table.insert(key, object_to_cache.clone())?;
             }
@@ -181,7 +187,7 @@ mod tests {
     #[rstest]
     fn test_cache(temp_dir: TempDir) {
         let cache_file_path = temp_dir.path().join("cache.my_favourite_struct");
-        let cacher = Cacher::<MyFavouriteStruct>::new(cache_file_path);
+        let cacher = RedbCacher::<MyFavouriteStruct>::new(cache_file_path);
 
         cacher.init_cache().unwrap();
         let cache = cacher.open_cache().unwrap();
@@ -205,7 +211,7 @@ mod tests {
     #[rstest]
     fn test_cache_overwrite(temp_dir: TempDir) {
         let cache_file_path = temp_dir.path().join("cache.my_favourite_struct");
-        let cacher = Cacher::<MyFavouriteStruct>::new(cache_file_path);
+        let cacher = RedbCacher::<MyFavouriteStruct>::new(cache_file_path);
 
         cacher.init_cache().unwrap();
         let cache = cacher.open_cache().unwrap();

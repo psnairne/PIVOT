@@ -15,11 +15,11 @@ pub struct HGNCClient {
 }
 
 impl HGNCClient {
-    pub fn new(rate_limiter: Ratelimiter, api_url: String, client: Client) -> Self {
+    pub fn new(rate_limiter: Ratelimiter, api_url: String) -> Self {
         HGNCClient {
             rate_limiter,
             api_url,
-            client,
+            client: Client::new(),
         }
     }
 
@@ -67,11 +67,8 @@ impl Default for HGNCClient {
             .build()
             .expect("Building rate limiter failed");
 
-        HGNCClient {
-            rate_limiter,
-            api_url: "https://rest.genenames.org/".to_string(),
-            client: Client::new(),
-        }
+        HGNCClient::new(rate_limiter, "https://rest.genenames.org/".to_string())
+
     }
 }
 

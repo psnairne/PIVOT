@@ -1,4 +1,4 @@
-use crate::caching::cacher::Cacher;
+use crate::caching::redb_cacher::RedbCacher;
 use crate::hgnc::enums::GeneQuery;
 use crate::hgnc::error::HGNCError;
 use crate::hgnc::hgnc_client::HGNCClient;
@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 #[derive(Default)]
 pub struct CachedHGNCClient {
-    cacher: Cacher<GeneDoc>,
+    cacher: RedbCacher<GeneDoc>,
     hgnc_client: HGNCClient,
 }
 
@@ -28,7 +28,7 @@ impl HGNCData for CachedHGNCClient {
 
 impl CachedHGNCClient {
     pub fn new(cache_file_path: PathBuf, hgnc_client: HGNCClient) -> Result<Self, HGNCError> {
-        let cacher = Cacher::new(cache_file_path);
+        let cacher = RedbCacher::new(cache_file_path);
         cacher.init_cache()?;
         Ok(CachedHGNCClient {
             cacher,

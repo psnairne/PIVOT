@@ -1,20 +1,21 @@
 #![allow(unused)]
 
-use crate::caching::cacher::Cacher;
+use crate::caching::redb_cacher::RedbCacher;
 use crate::hgvs::error::HGVSError;
 use crate::hgvs::hgvs_client::HGVSClient;
 use crate::hgvs::hgvs_variant::HgvsVariant;
 use crate::hgvs::traits::HGVSData;
 use std::path::PathBuf;
 
+#[derive(Default)]
 pub struct CachedHGVSClient {
-    cacher: Cacher<HgvsVariant>,
+    cacher: RedbCacher<HgvsVariant>,
     hgvs_client: HGVSClient,
 }
 
 impl CachedHGVSClient {
     pub fn new(cache_file_path: PathBuf, hgvs_client: HGVSClient) -> Result<Self, HGVSError> {
-        let cacher = Cacher::new(cache_file_path);
+        let cacher = RedbCacher::new(cache_file_path);
         cacher.init_cache()?;
         Ok(CachedHGVSClient {
             cacher,
