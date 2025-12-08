@@ -10,7 +10,7 @@ use phenopackets::schema::v2::core::{
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct HgvsVariant {
     /// Genome build, e.g., hg38
@@ -67,7 +67,7 @@ impl HgvsVariant {
             allele: allele.into(),
             transcript_hgvs: transcript_hgvs.into(),
             g_hgvs: g_hgvs.into(),
-            p_hgvs: p_hgvs.map(|s|s.into()),
+            p_hgvs: p_hgvs.map(|s| s.into()),
         }
     }
 

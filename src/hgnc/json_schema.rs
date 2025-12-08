@@ -25,7 +25,7 @@ pub struct Response {
     pub docs: Vec<GeneDoc>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
 #[repr(C)]
 pub struct GeneDoc {
     #[serde(default)]
@@ -95,10 +95,6 @@ pub struct GeneDoc {
 }
 
 impl GeneDoc {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn hgnc_id_owned(&self) -> Option<String> {
         self.hgnc_id.clone()
     }

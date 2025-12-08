@@ -27,15 +27,15 @@ impl CachedHGVSClient {
 impl HGVSData for CachedHGVSClient {
     fn request_and_validate_hgvs(&self, unvalidated_hgvs: &str) -> Result<HgvsVariant, HGVSError> {
         let cache = self.cacher.open_cache()?;
-        if let Some(validated_hgvs) = self.cacher.find_cache_entry(unvalidated_hgvs, &cache) {
-            return Ok(validated_hgvs);
+        if let Some(hgvs_variant) = self.cacher.find_cache_entry(unvalidated_hgvs, &cache) {
+            return Ok(hgvs_variant);
         }
 
-        let validated_hgvs = self
+        let hgvs_variant = self
             .hgvs_client
             .request_and_validate_hgvs(unvalidated_hgvs)?;
-        self.cacher.cache_object(validated_hgvs.clone(), &cache)?;
-        Ok(validated_hgvs.clone())
+        self.cacher.cache_object(hgvs_variant.clone(), &cache)?;
+        Ok(hgvs_variant.clone())
     }
 }
 
