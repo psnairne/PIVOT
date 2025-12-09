@@ -14,7 +14,7 @@ rstest = "0.26.1"
 serde = "1.0.228"
 thiserror = "2.0.17"
 ratelimit = "0.10.0"
-redb = "3.1.0"
+redb = { version = "3.1.0", optional = true }
 directories = "6.0.0"
 reqwest = { version = "0.12.24", features = ["blocking", "json"] }
 serde_json = "1.0.145"
@@ -26,4 +26,4 @@ tempfile = "3.23.0"
 
 
 [features]
-caching = []
+caching = ["dep:redb"]

@@ -1,6 +1,7 @@
 #[cfg(feature = "caching")]
 use crate::caching::error::CacherError;
 use crate::hgvs::enums::{AlleleCount, ChromosomalSex};
+#[cfg(feature = "caching")]
 use redb::{CommitError, DatabaseError, StorageError, TableError, TransactionError};
 use thiserror::Error;
 
@@ -52,14 +53,19 @@ pub enum HGVSError {
     DeserializeVariantValidatorResponseToSchema { hgvs: String, err: String },
     #[error("VariantValidator fetch request for {hgvs} failed. Error: {err}.")]
     FetchRequest { hgvs: String, err: String },
+    #[cfg(feature = "caching")]
     #[error(transparent)]
     CacheDatabase(#[from] DatabaseError),
+    #[cfg(feature = "caching")]
     #[error(transparent)]
     CacheTransaction(#[from] TransactionError),
+    #[cfg(feature = "caching")]
     #[error(transparent)]
     CacheCommit(#[from] CommitError),
+    #[cfg(feature = "caching")]
     #[error(transparent)]
     CacheTable(#[from] TableError),
+    #[cfg(feature = "caching")]
     #[error(transparent)]
     CacheStorage(#[from] StorageError),
     #[cfg(feature = "caching")]

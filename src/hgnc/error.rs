@@ -1,5 +1,6 @@
 #[cfg(feature = "caching")]
 use crate::caching::error::CacherError;
+#[cfg(feature = "caching")]
 use redb::{CommitError, DatabaseError, StorageError, TableError, TransactionError};
 use thiserror::Error;
 
@@ -20,14 +21,19 @@ pub enum HGNCError {
     #[cfg(feature = "caching")]
     #[error(transparent)]
     CacherError(#[from] CacherError),
+    #[cfg(feature = "caching")]
     #[error(transparent)]
     CacheCommit(#[from] CommitError),
+    #[cfg(feature = "caching")]
     #[error(transparent)]
     CacheStorage(#[from] StorageError),
+    #[cfg(feature = "caching")]
     #[error(transparent)]
     CacheTransaction(#[from] TransactionError),
+    #[cfg(feature = "caching")]
     #[error(transparent)]
     CacheDatabase(#[from] DatabaseError),
+    #[cfg(feature = "caching")]
     #[error(transparent)]
     CacheTable(#[from] TableError),
     #[error(transparent)]
