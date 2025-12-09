@@ -10,7 +10,6 @@ version = "0.1.0"
 
 [dependencies]
 phenopackets = { version = "0.2.2-post1", features = ["serde"] }
-rstest = "0.26.1"
 serde = "1.0.228"
 thiserror = "2.0.17"
 ratelimit = "0.10.0"
