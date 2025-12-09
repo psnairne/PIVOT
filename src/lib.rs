@@ -1,4 +1,4 @@
-//! # HGVS CLIENT
+//! # PIVOT
 //!
 //! A library for getting validated variant data using the VariantValidator API. One can request the full data from VariantValidator, or an abbreviated form.
 //!
