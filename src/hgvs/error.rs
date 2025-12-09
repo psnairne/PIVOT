@@ -1,3 +1,4 @@
+#[cfg(feature = "caching")]
 use crate::caching::error::CacherError;
 use crate::hgvs::enums::{AlleleCount, ChromosomalSex};
 use redb::{CommitError, DatabaseError, StorageError, TableError, TransactionError};
@@ -61,6 +62,7 @@ pub enum HGVSError {
     CacheTable(#[from] TableError),
     #[error(transparent)]
     CacheStorage(#[from] StorageError),
+    #[cfg(feature = "caching")]
     #[error(transparent)]
     CacherError(#[from] CacherError),
 }

@@ -23,3 +23,7 @@ regex = "1.12.2"
 [dev-dependencies]
 rstest = "0.26.1"
 tempfile = "3.23.0"
+
+
+[features]
+caching = []

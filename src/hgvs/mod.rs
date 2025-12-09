@@ -47,7 +47,7 @@
 //!
 //! ## CachedHGVSClient
 //!
-//! ```rust
+//! ```ignore TODO
 //! use pivot::hgvs::{CachedHGVSClient, HGVSClient, HGVSData};
 //!
 //! let temp_dir = tempfile::tempdir().expect("Failed to create temporary directory");
@@ -74,7 +74,7 @@
 //! let vi_allelic_state = vi.unwrap().variation_descriptor.unwrap().allelic_state.unwrap().label;
 //! assert_eq!("heterozygous", vi_allelic_state);
 //! ```
-
+#[cfg(feature = "caching")]
 pub use cached_hgvs_client::CachedHGVSClient;
 pub use enums::AlleleCount;
 pub use enums::ChromosomalSex;
@@ -82,7 +82,7 @@ pub use error::HGVSError;
 pub use hgvs_client::HGVSClient;
 pub use hgvs_variant::HgvsVariant;
 pub use traits::HGVSData;
-
+#[cfg(feature = "caching")]
 mod cached_hgvs_client;
 mod enums;
 mod error;

@@ -15,7 +15,7 @@
 //! - If you use CachedHGVSClient, the HgvsVariant objects will be cached and can thereafter be accessed without an API call.
 //!
 //! - There is also functionality for creating a Phenopacket VariantInterpretation from a HgvsVariant object and data on allele count and chromosomal sex.
-
+#[cfg(feature = "caching")]
 mod caching;
 pub mod hgnc;
 pub mod hgvs;

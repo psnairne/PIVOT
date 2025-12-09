@@ -1,3 +1,4 @@
+#[cfg(feature = "caching")]
 use crate::caching::error::CacherError;
 use redb::{CommitError, DatabaseError, StorageError, TableError, TransactionError};
 use thiserror::Error;
@@ -16,6 +17,7 @@ pub enum HGNCError {
     MissingElementInDocument { desired_element: String },
     #[error("Cant establish caching dir {0}")]
     CannotEstablishCacheDir(String),
+    #[cfg(feature = "caching")]
     #[error(transparent)]
     CacherError(#[from] CacherError),
     #[error(transparent)]

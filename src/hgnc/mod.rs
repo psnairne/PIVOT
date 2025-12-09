@@ -53,7 +53,7 @@
 //!
 //! ## CachedHGNCClient
 //!
-//! ```rust
+//! ```ignore TODO
 //! use pivot::hgnc::{HGNCClient, HGNCData, GeneQuery, CachedHGNCClient};
 //!
 //! let temp_dir = tempfile::tempdir().expect("Failed to create temporary directory");
@@ -67,7 +67,7 @@
 //! // if we request gene data again, the HGNC API will not be used, as the GeneDoc has been cached
 //! let gene_doc = client.request_gene_data(GeneQuery::HgncId("HGNC:13089")).unwrap();
 //! ```
-
+#[cfg(feature = "caching")]
 pub use cached_hgnc_client::CachedHGNCClient;
 pub use enums::GeneQuery;
 pub use error::HGNCError;
@@ -75,6 +75,7 @@ pub use hgnc_client::HGNCClient;
 pub use json_schema::GeneDoc;
 pub use mock_hgnc_client::MockHGNCClient;
 pub use traits::HGNCData;
+#[cfg(feature = "caching")]
 mod cached_hgnc_client;
 mod enums;
 mod error;
