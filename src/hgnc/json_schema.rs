@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-
 use std::fmt::Debug;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -26,7 +25,7 @@ pub struct Response {
     pub docs: Vec<GeneDoc>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
 #[repr(C)]
 pub struct GeneDoc {
     #[serde(default)]
@@ -96,16 +95,32 @@ pub struct GeneDoc {
 }
 
 impl GeneDoc {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn hgnc_id_owned(&self) -> Option<String> {
+        self.hgnc_id.clone()
     }
 
-    pub fn hgnc_id(mut self, hgnc_id: impl Into<String>) -> Self {
+    pub fn hgnc_id(&self) -> Option<&str> {
+        self.hgnc_id.as_deref()
+    }
+
+    pub fn symbol_owned(&self) -> Option<String> {
+        self.symbol.clone()
+    }
+
+    pub fn symbol(&self) -> Option<&str> {
+        self.symbol.as_deref()
+    }
+
+    pub fn symbol_id_pair(&self) -> (Option<String>, Option<String>) {
+        (self.symbol_owned(), self.hgnc_id_owned())
+    }
+
+    pub fn with_hgnc_id(mut self, hgnc_id: impl Into<String>) -> Self {
         self.hgnc_id = Some(hgnc_id.into());
         self
     }
 
-    pub fn symbol(mut self, symbol: impl Into<String>) -> Self {
+    pub fn with_symbol(mut self, symbol: impl Into<String>) -> Self {
         self.symbol = Some(symbol.into());
         self
     }

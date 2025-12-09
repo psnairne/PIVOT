@@ -1,3 +1,4 @@
+use crate::caching::error::CacherError;
 use redb::{CommitError, DatabaseError, StorageError, TableError, TransactionError};
 use thiserror::Error;
 
@@ -11,8 +12,12 @@ pub enum HGNCError {
         n_found: usize,
         n_expected: usize,
     },
+    #[error("No {desired_element} found in GeneDoc.")]
+    MissingElementInDocument { desired_element: String },
     #[error("Cant establish caching dir {0}")]
     CannotEstablishCacheDir(String),
+    #[error(transparent)]
+    CacherError(#[from] CacherError),
     #[error(transparent)]
     CacheCommit(#[from] CommitError),
     #[error(transparent)]

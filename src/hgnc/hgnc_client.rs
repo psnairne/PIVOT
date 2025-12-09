@@ -15,12 +15,7 @@ pub struct HGNCClient {
 }
 
 impl HGNCClient {
-    pub fn new(api_url: String) -> Self {
-        let rate_limiter = Ratelimiter::builder(10, Duration::from_secs(1))
-            .max_tokens(10)
-            .build()
-            .expect("Building rate limiter failed");
-
+    pub fn new(rate_limiter: Ratelimiter, api_url: String) -> Self {
         HGNCClient {
             rate_limiter,
             api_url,
@@ -63,49 +58,6 @@ impl HGNCData for HGNCClient {
             })
         }
     }
-
-    fn request_hgnc_id(&self, symbol: &str) -> Result<String, HGNCError> {
-        let doc = self.request_gene_data(GeneQuery::Symbol(symbol))?;
-        match doc.hgnc_id {
-            None => Err(HGNCError::UnexpectedNumberOfDocuments {
-                identifier: symbol.to_string(),
-                n_found: 0,
-                n_expected: 1,
-            }),
-            Some(hg_id) => Ok(hg_id),
-        }
-    }
-
-    fn request_gene_symbol(&self, hgnc_id: &str) -> Result<String, HGNCError> {
-        let doc = self.request_gene_data(GeneQuery::HgncId(hgnc_id))?;
-
-        match doc.symbol {
-            None => Err(HGNCError::UnexpectedNumberOfDocuments {
-                identifier: hgnc_id.to_string(),
-                n_found: 0,
-                n_expected: 1,
-            }),
-            Some(symbol) => Ok(symbol),
-        }
-    }
-
-    fn request_gene_identifier_pair(
-        &self,
-        query: GeneQuery,
-    ) -> Result<(String, String), HGNCError> {
-        let doc = self.request_gene_data(query.clone())?;
-
-        if let Some(symbol) = doc.symbol
-            && let Some(hgnc_id) = doc.hgnc_id
-        {
-            return Ok((hgnc_id, symbol));
-        }
-        Err(HGNCError::UnexpectedNumberOfDocuments {
-            identifier: query.inner().to_string(),
-            n_found: 0,
-            n_expected: 1,
-        })
-    }
 }
 
 impl Default for HGNCClient {
@@ -115,11 +67,7 @@ impl Default for HGNCClient {
             .build()
             .expect("Building rate limiter failed");
 
-        HGNCClient {
-            rate_limiter,
-            api_url: "https://rest.genenames.org/".to_string(),
-            client: Client::new(),
-        }
+        HGNCClient::new(rate_limiter, "https://rest.genenames.org/".to_string())
     }
 }
 
@@ -138,24 +86,24 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
-    #[case(GeneQuery::Symbol("ZNF3"), Some("HGNC:13089"), Some("ZNF3"))]
-    #[case(GeneQuery::HgncId("HGNC:13089"), Some("HGNC:13089"), Some("ZNF3"))]
+    #[case(GeneQuery::Symbol("ZNF3"), "ZNF3", "HGNC:13089")]
+    #[case(GeneQuery::HgncId("HGNC:13089"), "ZNF3", "HGNC:13089")]
     fn test_request_gene_data(
         #[case] query: GeneQuery,
-        #[case] expected_hgnc_id: Option<&str>,
-        #[case] expected_symbol: Option<&str>,
+        #[case] expected_symbol: String,
+        #[case] expected_hgnc_id: String,
     ) {
         let client = HGNCClient::default();
 
         let gene_doc = client.request_gene_data(query).unwrap();
 
-        assert_eq!(gene_doc.hgnc_id.as_deref(), expected_hgnc_id);
-        assert_eq!(gene_doc.symbol.as_deref(), expected_symbol);
+        assert_eq!(gene_doc.hgnc_id, Some(expected_hgnc_id));
+        assert_eq!(gene_doc.symbol, Some(expected_symbol));
     }
 
     #[rstest]
-    #[case(GeneQuery::Symbol("ZNF3"), ("HGNC:13089", "ZNF3"))]
-    #[case(GeneQuery::HgncId("HGNC:13089"), ("HGNC:13089", "ZNF3"))]
+    #[case(GeneQuery::Symbol("ZNF3"), ("ZNF3", "HGNC:13089"))]
+    #[case(GeneQuery::HgncId("HGNC:13089"), ("ZNF3", "HGNC:13089"))]
     fn test_request_gene_identifier_pair(
         #[case] query: GeneQuery,
         #[case] expected_pair: (&str, &str),
@@ -170,21 +118,17 @@ mod tests {
 
     #[rstest]
     fn test_request_hgnc_id() {
-        let symbol = "CLOCK";
         let client = HGNCClient::default();
-
-        let hgnc_id = client.request_hgnc_id(symbol).unwrap();
-
+        let hgnc_id = client.request_hgnc_id(GeneQuery::Symbol("CLOCK")).unwrap();
         assert_eq!(hgnc_id.as_str(), "HGNC:2082");
     }
 
     #[rstest]
     fn test_request_gene_symbol() {
-        let hgnc_id = "HGNC:2082";
         let client = HGNCClient::default();
-
-        let gene_symbol = client.request_gene_symbol(hgnc_id).unwrap();
-
+        let gene_symbol = client
+            .request_gene_symbol(GeneQuery::HgncId("HGNC:2082"))
+            .unwrap();
         assert_eq!(gene_symbol.as_str(), "CLOCK");
     }
 }
