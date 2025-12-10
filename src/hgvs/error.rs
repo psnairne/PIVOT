@@ -20,13 +20,13 @@ pub enum HGVSError {
         found_assemblies: Vec<String>,
     },
     #[error(
-        "The provided {id_type} {expected_gene} does not match with the {hgvs_gene} that of HGVS variant {hgvs}"
+        "The provided {id_type} {inputted_gene} does not match with the actual gene {actual_gene} of HGVS variant {hgvs}"
     )]
     MismatchingGeneData {
         id_type: String,
-        expected_gene: String,
+        inputted_gene: String,
         hgvs: String,
-        hgvs_gene: String,
+        actual_gene: String,
     },
     #[error(
         "VariantValidator response for {hgvs} has element {element} with following problem: {problem}"

@@ -302,9 +302,9 @@ impl HgvsVariant {
         } else {
             Err(HGVSError::MismatchingGeneData {
                 id_type: id_type.to_string(),
-                expected_gene: gene.to_string(),
-                hgvs: self.g_hgvs.to_string(),
-                hgvs_gene: self.hgnc_id.to_string(),
+                inputted_gene: gene.to_string(),
+                hgvs: self.transcript_hgvs.clone(),
+                actual_gene: self.hgnc_id.clone(),
             })
         }
     }
