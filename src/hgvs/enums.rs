@@ -19,6 +19,7 @@ pub enum AlleleCount {
     Double,
 }
 
+#[derive(Debug)]
 pub enum GenomeAssembly {
     Hg38,
     Hg19,
