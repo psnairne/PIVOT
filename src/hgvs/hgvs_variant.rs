@@ -304,7 +304,7 @@ impl HgvsVariant {
                 id_type: id_type.to_string(),
                 inputted_gene: gene.to_string(),
                 hgvs: self.transcript_hgvs.clone(),
-                actual_gene: self.hgnc_id.clone(),
+                actual_gene: expected.to_string(),
             })
         }
     }
