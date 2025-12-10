@@ -5,6 +5,10 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum HGVSError {
+    #[error(
+        "Variant Validator did not accept submitted HGVS {hgvs}. Validation warnings: {problems:?}"
+    )]
+    InvalidHgvs { hgvs: String, problems: Vec<String> },
     #[error("Hgvs string {hgvs} not accepted due to format problem: {problem}.")]
     HgvsFormatNotAccepted { hgvs: String, problem: String },
     #[error(
@@ -48,9 +52,11 @@ pub enum HGVSError {
     #[error("An allele count of {found} was found. Only allele counts of 1 or 2 are allowed.")]
     InvalidAlleleCount { found: u8 },
     #[error(
-        "VariantValidator response for {hgvs} could not be deserialized to schema. {hgvs} may be invalid. Error: {err}."
+        "VariantValidator response for {hgvs} could not be deserialized to schema. Error: {err}."
     )]
     DeserializeVariantValidatorResponseToSchema { hgvs: String, err: String },
+    #[error("VariantValidator response for {hgvs} had an unexpected format: {format_issue}")]
+    VariantValidatorResponseUnexpectedFormat { hgvs: String, format_issue: String },
     #[error("VariantValidator fetch request for {hgvs} failed. Error: {err}.")]
     FetchRequest { hgvs: String, err: String },
     #[error(transparent)]

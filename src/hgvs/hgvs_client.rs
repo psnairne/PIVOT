@@ -3,7 +3,7 @@
 use crate::hgvs::enums::GenomeAssembly;
 use crate::hgvs::error::HGVSError;
 use crate::hgvs::hgvs_variant::HgvsVariant;
-use crate::hgvs::json_schema::VariantValidatorResponse;
+use crate::hgvs::json_schema::{SingleVariantInfo, VariantValidatorResponse};
 use crate::hgvs::traits::HGVSData;
 use crate::hgvs::utils::{is_c_hgvs, is_n_hgvs};
 use ratelimit::Ratelimiter;
@@ -89,12 +89,45 @@ impl HGVSClient {
                 hgvs: unvalidated_hgvs.to_string(),
                 err: err.to_string(),
             })?;
+
         response.json::<VariantValidatorResponse>().map_err(|err| {
             HGVSError::DeserializeVariantValidatorResponseToSchema {
                 hgvs: unvalidated_hgvs.to_string(),
                 err: err.to_string(),
             }
         })
+    }
+
+    fn get_variant_info_for_valid_hgvs(
+        unvalidated_hgvs: &str,
+        response: VariantValidatorResponse,
+    ) -> Result<SingleVariantInfo, HGVSError> {
+        if response.flag == "warning" {
+            let validation_warnings = response
+                .variant_info
+                .get("validation_warning_1")
+                .ok_or_else(|| HGVSError::VariantValidatorResponseUnexpectedFormat {
+                    hgvs: unvalidated_hgvs.to_string(),
+                    format_issue:
+                        "The response flag was warning but could not access validation warnings."
+                            .to_string(),
+                })?
+                .validation_warnings
+                .clone();
+            Err(HGVSError::InvalidHgvs {
+                hgvs: unvalidated_hgvs.to_string(),
+                problems: validation_warnings,
+            })
+        } else if response.flag != "gene_variant" {
+            Err(HGVSError::NonGeneVariant {
+                hgvs: unvalidated_hgvs.to_string(),
+                flag: response.flag.clone(),
+            })
+        } else if !response.variant_info.contains_key(unvalidated_hgvs) {
+            Err(HGVSError::VariantValidatorResponseUnexpectedFormat {hgvs:unvalidated_hgvs.to_string(), format_issue: "VariantValidator response unexpectedly had no field corresponding to provided HGVS.".to_string()})
+        } else {
+            Ok(response.variant_info[unvalidated_hgvs].clone())
+        }
     }
 }
 
@@ -112,16 +145,16 @@ impl HGVSData for HGVSClient {
 
         let response = self.fetch_request(fetch_url.clone(), unvalidated_hgvs)?;
 
-        if response.flag != "gene_variant" {
-            return Err(HGVSError::NonGeneVariant {
-                hgvs: unvalidated_hgvs.to_string(),
-                flag: response.flag.clone(),
-            });
-        }
-
-        let variant_info = response.variant_info[unvalidated_hgvs].clone();
+        let variant_info = Self::get_variant_info_for_valid_hgvs(unvalidated_hgvs, response)?;
 
         let assemblies = variant_info.primary_assembly_loci;
+
+        /*            .ok_or_else(|| {
+            HGVSError::VariantValidatorResponseUnexpectedFormat {
+                hgvs: unvalidated_hgvs.to_string(),
+                format_issue: "VariantValidator response has empty assemblies field.".to_string(),
+            }
+        })?;*/
 
         let assembly = assemblies
             .get(&self.genome_assembly.to_string())
@@ -140,6 +173,15 @@ impl HGVSData for HGVSClient {
                 problem: "position should be parseable to u32".to_string(),
             }
         })?;
+
+        /*        let hgnc_id = variant_info
+        .gene_ids
+        .ok_or_else(|| HGVSError::VariantValidatorResponseUnexpectedFormat {
+            hgvs: unvalidated_hgvs.to_string(),
+            format_issue: "VariantValidator response has empty GeneIds field for gene variant."
+                .to_string(),
+        })?
+        .hgnc_id;*/
 
         let p_hgvs = if variant_info
             .hgvs_predicted_protein_consequence
@@ -214,10 +256,7 @@ mod tests {
         let unvalidated_hgvs = "NM_001173464.1:c.2860G>T";
         let client = HGVSClient::default();
         let result = client.request_and_validate_hgvs(unvalidated_hgvs);
-        assert!(matches!(
-            result,
-            Err(HGVSError::DeserializeVariantValidatorResponseToSchema { .. })
-        ));
+        assert!(matches!(result, Err(HGVSError::InvalidHgvs { .. })));
     }
 
     #[rstest]
