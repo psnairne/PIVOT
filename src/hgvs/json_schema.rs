@@ -1,7 +1,9 @@
+#![allow(unused)]
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// This Struct captures the full structure of the VariantValidator response type. The variant_info HashMap in theory allows for multiple variant_infos in the response.
+/// The variant_info HashMap will contain a single pair of the form
+/// unvalidated_hgvs -> SingleVariantInfo
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VariantValidatorResponse {
     #[serde(flatten)]
@@ -10,7 +12,7 @@ pub struct VariantValidatorResponse {
     pub metadata: Metadata,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SingleVariantInfo {
     pub alt_genomic_loci: Vec<serde_json::Value>, // Uncertain format
     pub annotations: Annotations,
@@ -35,7 +37,7 @@ pub struct SingleVariantInfo {
     pub variant_exonic_positions: VariantExonicPositions,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Annotations {
     pub chromosome: String,
     pub db_xref: DbXref,
@@ -48,7 +50,7 @@ pub struct Annotations {
     pub variant: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DbXref {
     #[serde(rename = "CCDS")]
     pub ccds: Option<String>,
@@ -58,7 +60,7 @@ pub struct DbXref {
     pub select: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GeneIds {
     pub ccds_ids: Vec<serde_json::Value>, // Uncertain format
     pub ensembl_gene_id: String,
@@ -68,7 +70,7 @@ pub struct GeneIds {
     pub ucsc_id: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PredictedProteinConsequence {
     pub lrg_slr: String,
     pub lrg_tlr: String,
@@ -91,12 +93,12 @@ pub struct VcfCoordinates {
     pub reference: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ReferenceSequenceRecords {
     pub transcript: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VariantExonicPositions {
     #[serde(flatten)]
     pub exonic_positions: HashMap<String, ExonicPosition>,
@@ -108,7 +110,7 @@ pub struct ExonicPosition {
     pub end_exon: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Metadata {
     pub variantvalidator_hgvs_version: String,
     pub variantvalidator_version: String,
