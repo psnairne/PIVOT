@@ -193,7 +193,7 @@ impl HgvsVariant {
         )?;
 
         let variation_descriptor = VariationDescriptor {
-            id: self.g_hgvs().to_string(), // I'm not entirely happy with this
+            id: self.transcript_hgvs().to_string(), // I'm not entirely happy with this
             gene_context: Some(gene_context),
             expressions,
             vcf_record: Some(vcf_record),

@@ -149,13 +149,6 @@ impl HGVSData for HGVSClient {
 
         let assemblies = variant_info.primary_assembly_loci;
 
-        /*            .ok_or_else(|| {
-            HGVSError::VariantValidatorResponseUnexpectedFormat {
-                hgvs: unvalidated_hgvs.to_string(),
-                format_issue: "VariantValidator response has empty assemblies field.".to_string(),
-            }
-        })?;*/
-
         let assembly = assemblies
             .get(&self.genome_assembly.to_string())
             .ok_or_else(|| HGVSError::GenomeAssemblyNotFound {
@@ -173,15 +166,6 @@ impl HGVSData for HGVSClient {
                 problem: "position should be parseable to u32".to_string(),
             }
         })?;
-
-        /*        let hgnc_id = variant_info
-        .gene_ids
-        .ok_or_else(|| HGVSError::VariantValidatorResponseUnexpectedFormat {
-            hgvs: unvalidated_hgvs.to_string(),
-            format_issue: "VariantValidator response has empty GeneIds field for gene variant."
-                .to_string(),
-        })?
-        .hgnc_id;*/
 
         let p_hgvs = if variant_info
             .hgvs_predicted_protein_consequence
