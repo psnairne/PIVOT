@@ -1,4 +1,5 @@
 #![allow(unused)]
+
 use crate::hgvs::enums::GenomeAssembly;
 use crate::hgvs::error::HGVSError;
 use crate::hgvs::hgvs_variant::HgvsVariant;
@@ -8,6 +9,7 @@ use crate::hgvs::utils::{is_c_hgvs, is_n_hgvs};
 use ratelimit::Ratelimiter;
 use reqwest::blocking::Client;
 use serde_json::Value;
+use std::fmt::Debug;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -32,6 +34,17 @@ impl Default for HGVSClient {
             Client::new(),
             GenomeAssembly::Hg38,
         )
+    }
+}
+
+impl Debug for HGVSClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HGVSClient")
+            .field("rate_limiter", &"<rate limiter>") // cannot debug-print
+            .field("api_url", &self.api_url)
+            .field("client", &self.client) // cannot debug-print
+            .field("genome_assembly", &self.genome_assembly)
+            .finish()
     }
 }
 

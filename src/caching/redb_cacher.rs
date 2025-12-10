@@ -69,6 +69,7 @@ impl Cacheable for GeneDoc {
 ///
 /// NOTE: in the RedbDatabase, a single table will be automatically constructed for the type T.
 /// If the user would like to have multiple caches of type T, then a different file path would have to be used.
+#[derive(Debug)]
 pub(crate) struct RedbCacher<T: Cacheable> {
     cache_file_path: PathBuf,
     _phantom: PhantomData<T>,

@@ -7,7 +7,7 @@ use crate::hgvs::hgvs_variant::HgvsVariant;
 use crate::hgvs::traits::HGVSData;
 use std::path::PathBuf;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct CachedHGVSClient {
     cacher: RedbCacher<HgvsVariant>,
     hgvs_client: HGVSClient,
