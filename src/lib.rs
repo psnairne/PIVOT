@@ -19,3 +19,4 @@
 mod caching;
 pub mod hgnc;
 pub mod hgvs;
+pub(crate) mod utils;

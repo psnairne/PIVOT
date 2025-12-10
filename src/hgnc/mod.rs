@@ -46,7 +46,7 @@
 //! use pivot::hgnc::{HGNCClient, HGNCData, GeneQuery};
 //!
 //! let client = HGNCClient::default();
-//! let gene_symbol = client.request_gene_symbol(GeneQuery::HgncId("HGNC:13089")).unwrap();
+//! let gene_symbol = client.request_gene_symbol(GeneQuery::from("HGNC:13089")).unwrap();
 //! let expected = "ZNF3".to_string();
 //! assert_eq!(gene_symbol,expected);
 //! ```

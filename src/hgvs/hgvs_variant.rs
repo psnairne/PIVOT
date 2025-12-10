@@ -2,6 +2,7 @@
 use crate::hgvs::enums::{AlleleCount, ChromosomalSex};
 use crate::hgvs::error::HGVSError;
 use crate::hgvs::utils::{is_c_hgvs, is_n_hgvs};
+use crate::utils::is_hgnc_id;
 use phenopackets::ga4gh::vrsatile::v1::{
     Expression, GeneDescriptor, MoleculeContext, VariationDescriptor, VcfRecord,
 };
@@ -290,7 +291,7 @@ impl HgvsVariant {
     }
 
     pub fn validate_against_gene(&self, gene: &str) -> Result<(), HGVSError> {
-        let (expected, id_type) = if Self::is_hgnc_id(gene) {
+        let (expected, id_type) = if is_hgnc_id(gene) {
             (self.hgnc_id.as_str(), "HGNC ID")
         } else {
             (self.symbol.as_str(), "gene symbol")
@@ -306,11 +307,6 @@ impl HgvsVariant {
                 hgvs_gene: self.hgnc_id.to_string(),
             })
         }
-    }
-
-    fn is_hgnc_id(gene: &str) -> bool {
-        let split_string = gene.split(':').collect::<Vec<&str>>();
-        split_string.first() == Some(&"HGNC")
     }
 }
 
@@ -375,12 +371,6 @@ mod tests {
                 .validate_against_gene("HGNC:1234")
                 .is_err()
         );
-    }
-
-    #[rstest]
-    fn test_is_hgnc_id() {
-        assert!(HgvsVariant::is_hgnc_id("HGNC:1234"));
-        assert!(!HgvsVariant::is_hgnc_id("CLOCK"));
     }
 
     #[rstest]
