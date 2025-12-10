@@ -45,6 +45,8 @@ pub enum HGVSError {
         is_x: bool,
         is_y: bool,
     },
+    #[error("An allele count of {found} was found. Only allele counts of 1 or 2 are allowed.")]
+    InvalidAlleleCount { found: u8 },
     #[error(
         "VariantValidator response for {hgvs} could not be deserialized to schema. {hgvs} may be invalid. Error: {err}."
     )]
