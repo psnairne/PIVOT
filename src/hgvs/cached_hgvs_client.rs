@@ -13,6 +13,7 @@ pub struct CachedHGVSClient {
     hgvs_client: HGVSClient,
 }
 
+
 impl CachedHGVSClient {
     pub fn new(cache_file_path: PathBuf, hgvs_client: HGVSClient) -> Result<Self, HGVSError> {
         let cacher = RedbCacher::new(cache_file_path);
@@ -52,26 +53,28 @@ mod tests {
         tempfile::tempdir().expect("Failed to create temporary directory")
     }
 
-    #[rstest]
-    fn test_request_and_validate_hgvs(temp_dir: TempDir) {
-        let unvalidated_hgvs = "NM_001173464.1:c.2860C>T";
+    #[fixture]
+    #[once]
+    fn cached_client(temp_dir: TempDir) -> CachedHGVSClient {
         let cache_file_path = temp_dir.path().join("cache.hgvs");
-        let client = CachedHGVSClient::new(cache_file_path, HGVSClient::default()).unwrap();
+        CachedHGVSClient::new(cache_file_path, HGVSClient::default()).unwrap()
+    }
 
-        let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
+    #[rstest]
+    fn test_request_and_validate_hgvs(cached_client: &CachedHGVSClient) {
+        let unvalidated_hgvs = "NM_001173464.1:c.2860C>T";
+        let validated_hgvs = cached_client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
     #[rstest]
-    fn test_cache(temp_dir: TempDir) {
+    fn test_cache(cached_client: &CachedHGVSClient) {
         let unvalidated_hgvs = "NM_001173464.1:c.2860C>T";
-        let cache_file_path = temp_dir.path().join("cache.hgvs");
-        let client = CachedHGVSClient::new(cache_file_path, HGVSClient::default()).unwrap();
 
-        client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
+        cached_client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
 
-        let cache = client.cacher.open_cache().unwrap();
-        let cached_hgvs = client
+        let cache = cached_client.cacher.open_cache().unwrap();
+        let cached_hgvs = cached_client
             .cacher
             .find_cache_entry(unvalidated_hgvs, &cache)
             .unwrap();

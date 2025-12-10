@@ -217,36 +217,38 @@ mod tests {
     use crate::hgvs::error::HGVSError;
     use crate::hgvs::hgvs_client::HGVSClient;
     use crate::hgvs::traits::HGVSData;
-    use rstest::rstest;
+    use rstest::{fixture, rstest};
+
+    #[fixture]
+    #[once]
+    fn client() -> HGVSClient {
+        HGVSClient::default()
+    }
 
     #[rstest]
-    fn test_request_and_validate_hgvs_c() {
+    fn test_request_and_validate_hgvs_c(client: &HGVSClient) {
         let unvalidated_hgvs = "NM_001173464.1:c.2860C>T";
-        let client = HGVSClient::default();
         let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
     #[rstest]
-    fn test_request_and_validate_hgvs_n() {
+    fn test_request_and_validate_hgvs_n(client: &HGVSClient) {
         let unvalidated_hgvs = "NR_002196.1:n.601G>T";
-        let client = HGVSClient::default();
         let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
     #[rstest]
-    fn test_request_and_validate_hgvs_wrong_reference_base_err() {
+    fn test_request_and_validate_hgvs_wrong_reference_base_err(client: &HGVSClient) {
         let unvalidated_hgvs = "NM_001173464.1:c.2860G>T";
-        let client = HGVSClient::default();
         let result = client.request_and_validate_hgvs(unvalidated_hgvs);
         assert!(matches!(result, Err(HGVSError::InvalidHgvs { .. })));
     }
 
     #[rstest]
-    fn test_request_and_validate_hgvs_not_c_or_n_hgvs_err() {
+    fn test_request_and_validate_hgvs_not_c_or_n_hgvs_err(client: &HGVSClient) {
         let unvalidated_hgvs = "NC_000012.12:g.39332405G>A";
-        let client = HGVSClient::default();
         let result = client.request_and_validate_hgvs(unvalidated_hgvs);
         assert!(matches!(
             result,
