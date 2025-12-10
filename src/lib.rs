@@ -1,21 +1,87 @@
 //! # PIVOT
 //!
-//! A library for getting gene data from HGNC and variant data from VariantValidator.
+//! A library for getting validated variant data using the VariantValidator API. One can request the full data from VariantValidator, or an abbreviated form.
 //!
-//! ## HGNC
+//! ## Objects
 //!
-//! - Given a gene symbol or an HGNC ID, get a GeneDoc containing a multitude of information about that gene.
+//! # [`SingleVariantResponse`]
 //!
-//! - If you use CachedHGNCClient, the GeneDocs will be cached and can thereafter be accessed without an API call.
+//! This struct contains all the information provided by VariantValidator on a single variant.
 //!
-//! ## HGVS
+//! # [`HgvsVariant`]
 //!
-//! - Validate a hgvs.c (e.g. NM_000138.5:c.8242G>T) or hgvs.n (NR_002196.1:n.601G>T) string, and get a HgvsVariant object with information on the relevant (coding or non-coding) gene, and the amino acid change if applicable.
+//! This is a condensed form of [`SingleVariantResponse`].
 //!
-//! - If you use CachedHGVSClient, the HgvsVariant objects will be cached and can thereafter be accessed without an API call.
+//! # [`HGVSData`]
 //!
-//! - There is also functionality for creating a Phenopacket VariantInterpretation from a HgvsVariant object and data on allele count and chromosomal sex.
+//! A trait consisting of the following methods:
+//!
+//! - `get_full_validated_hgvs_data(&self, unvalidated_hgvs: &str) -> Result<SingleVariantResponse, HGVSError>` — validates that the HGVS is accurate and, if so, returns the [`SingleVariantResponse`] object.
+//! - `get_abbreviated_validated_hgvs_data(&self, unvalidated_hgvs: &str) -> Result<HgvsVariant, HGVSError>` — validates that the HGVS is accurate and, if so, returns the condensed [`HgvsVariant`] object.
+//!
+//! The get_abbreviated_validated_hgvs_data method is formed automatically.
+//!
+//! # [`HGVSClient`]
+//!
+//! The basic implementation of the [`HGVSData`] trait. Make a request to the VariantValidator API and receive either a [`SingleVariantResponse`] or [`HgvsVariant`] object if the &str was a valid hgvs.c or hgvs.n variant string.
+//!
+//! # [`HGVSError`]
+//!
+//! An enum for errors returned by the API.
+//!
+//! ## Use
+//!
+//! ### Get full data from VariantValidator
+//!
+//! ```rust
+//! use pivot::{GenomeAssembly, HGVSClient, HGVSData};
+//!
+//! let client = HGVSClient::default();
+//!
+//! let hgvs_data = client.get_full_validated_hgvs_data("NM_001173464.1:c.2860C>T").unwrap();
+//!
+//! assert_eq!(hgvs_data.flag, "gene_variant");
+//! ```
+//!
+//! ### Get condensed data from VariantValidator
+//!
+//! The [`GenomeAssembly`] argument determines the g_hgvs attribute of [`HgvsVariant`].
+//!
+//! ```rust
+//! use pivot::{GenomeAssembly, HGVSClient, HGVSData};
+//!
+//! let client = HGVSClient::default();
+//!
+//! let hgvs_variant = client.get_abbreviated_validated_hgvs_data("NM_001173464.1:c.2860C>T", GenomeAssembly::Hg38).unwrap();
+//!
+//! assert_eq!(hgvs_variant.gene_symbol(), "KIF21A");
+//! ```
+//!
+//! ### Convert [`SingleVariantResponse`] into the more condensed [`HgvsVariant`].
+//!
+//! ```rust
+//! use pivot::{GenomeAssembly, HGVSClient, HGVSData};
+//!
+//! let client = HGVSClient::default();
+//!
+//! let hgvs_data = client.get_full_validated_hgvs_data("NM_001173464.1:c.2860C>T").unwrap();
+//! let hgvs_variant = hgvs_data.abbreviate_response(GenomeAssembly::Hg38).unwrap();
+//!
+//! assert_eq!(hgvs_variant.gene_symbol(), "KIF21A");
+//! ```
+//!
+pub use enums::GenomeAssembly;
+pub use error::HGVSError;
+pub use hgvs_client::HGVSClient;
+pub use hgvs_variant::HgvsVariant;
+pub use single_variant_response::SingleVariantResponse;
+pub use traits::HGVSData;
 
-mod caching;
-pub mod hgnc;
-pub mod hgvs;
+mod enums;
+mod error;
+mod hgvs_client;
+mod hgvs_variant;
+mod json_schema;
+mod single_variant_response;
+mod traits;
+mod utils;
