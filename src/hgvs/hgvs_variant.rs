@@ -10,6 +10,7 @@ use phenopackets::schema::v2::core::{
     AcmgPathogenicityClassification, OntologyClass, TherapeuticActionability, VariantInterpretation,
 };
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -193,7 +194,7 @@ impl HgvsVariant {
         )?;
 
         let variation_descriptor = VariationDescriptor {
-            id: self.transcript_hgvs().to_string(), // I'm not entirely happy with this
+            id: Uuid::new_v4().to_string(),
             gene_context: Some(gene_context),
             expressions,
             vcf_record: Some(vcf_record),
@@ -464,6 +465,8 @@ mod tests {
         let vi = validated_c_hgvs()
             .create_variant_interpretation(AlleleCount::Single, ChromosomalSex::Unknown)
             .unwrap();
+
+        dbg!(&vi);
 
         let vi_allelic_state = vi
             .variation_descriptor
