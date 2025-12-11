@@ -15,6 +15,7 @@ use std::time::Duration;
 
 pub struct HGVSClient {
     rate_limiter: Ratelimiter,
+    attempts: usize,
     api_url: String,
     client: Client,
     genome_assembly: GenomeAssembly,
@@ -30,6 +31,7 @@ impl Default for HGVSClient {
             "https://rest.variantvalidator.org/VariantValidator/variantvalidator/".to_string();
         HGVSClient::new(
             rate_limiter,
+            3,
             api_url.to_string(),
             Client::new(),
             GenomeAssembly::Hg38,
@@ -51,12 +53,14 @@ impl Debug for HGVSClient {
 impl HGVSClient {
     pub fn new(
         rate_limiter: Ratelimiter,
+        attempts: usize,
         api_url: String,
         client: Client,
         genome_assembly: GenomeAssembly,
     ) -> Self {
         HGVSClient {
             rate_limiter,
+            attempts,
             api_url,
             client,
             genome_assembly,
@@ -75,26 +79,35 @@ impl HGVSClient {
         fetch_url: String,
         unvalidated_hgvs: &str,
     ) -> Result<VariantValidatorResponse, HGVSError> {
-        if let Err(duration) = self.rate_limiter.try_wait() {
-            sleep(duration);
+        for _ in 0..self.attempts {
+            if let Err(duration) = self.rate_limiter.try_wait() {
+                sleep(duration);
+            }
+
+            let response = self
+                .client
+                .get(fetch_url.clone())
+                .header("User-Agent", "PIVOT")
+                .header("Accept", "application/json")
+                .send()
+                .map_err(|err| HGVSError::FetchRequest {
+                    hgvs: unvalidated_hgvs.to_string(),
+                    err: err.to_string(),
+                })?;
+
+            if response.status().is_success() {
+                return response.json::<VariantValidatorResponse>().map_err(|err| {
+                    HGVSError::DeserializeVariantValidatorResponseToSchema {
+                        hgvs: unvalidated_hgvs.to_string(),
+                        err: err.to_string(),
+                    }
+                });
+            }
         }
 
-        let response = self
-            .client
-            .get(fetch_url.clone())
-            .header("User-Agent", "PIVOT")
-            .header("Accept", "application/json")
-            .send()
-            .map_err(|err| HGVSError::FetchRequest {
-                hgvs: unvalidated_hgvs.to_string(),
-                err: err.to_string(),
-            })?;
-
-        response.json::<VariantValidatorResponse>().map_err(|err| {
-            HGVSError::DeserializeVariantValidatorResponseToSchema {
-                hgvs: unvalidated_hgvs.to_string(),
-                err: err.to_string(),
-            }
+        Err(HGVSError::VariantValidatorAPI {
+            hgvs: unvalidated_hgvs.to_string(),
+            attempts: self.attempts,
         })
     }
 
