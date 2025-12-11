@@ -13,7 +13,6 @@ pub struct CachedHGVSClient {
     hgvs_client: HGVSClient,
 }
 
-
 impl CachedHGVSClient {
     pub fn new(cache_file_path: PathBuf, hgvs_client: HGVSClient) -> Result<Self, HGVSError> {
         let cacher = RedbCacher::new(cache_file_path);
@@ -53,25 +52,16 @@ mod tests {
         tempfile::tempdir().expect("Failed to create temporary directory")
     }
 
-    #[fixture]
-    #[once]
-    fn cached_client(temp_dir: TempDir) -> CachedHGVSClient {
+    #[rstest]
+    fn test_cached_hgvs_client(temp_dir: TempDir) {
         let cache_file_path = temp_dir.path().join("cache.hgvs");
-        CachedHGVSClient::new(cache_file_path, HGVSClient::default()).unwrap()
-    }
+        let cached_client = CachedHGVSClient::new(cache_file_path, HGVSClient::default()).unwrap();
 
-    #[rstest]
-    fn test_request_and_validate_hgvs(cached_client: &CachedHGVSClient) {
         let unvalidated_hgvs = "NM_001173464.1:c.2860C>T";
-        let validated_hgvs = cached_client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
+        let validated_hgvs = cached_client
+            .request_and_validate_hgvs(unvalidated_hgvs)
+            .unwrap();
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
-    }
-
-    #[rstest]
-    fn test_cache(cached_client: &CachedHGVSClient) {
-        let unvalidated_hgvs = "NM_001173464.1:c.2860C>T";
-
-        cached_client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
 
         let cache = cached_client.cacher.open_cache().unwrap();
         let cached_hgvs = cached_client
