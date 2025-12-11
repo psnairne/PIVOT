@@ -466,8 +466,6 @@ mod tests {
             .create_variant_interpretation(AlleleCount::Single, ChromosomalSex::Unknown)
             .unwrap();
 
-        dbg!(&vi);
-
         let vi_allelic_state = vi
             .variation_descriptor
             .clone()
