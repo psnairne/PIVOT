@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// If the request is a success, a response with the following structure will be returned
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VariantValidatorResponse {
     #[serde(flatten)]

@@ -15,6 +15,7 @@ use std::time::Duration;
 
 pub struct HGVSClient {
     rate_limiter: Ratelimiter,
+    attempts: usize,
     api_url: String,
     client: Client,
     genome_assembly: GenomeAssembly,
@@ -30,6 +31,7 @@ impl Default for HGVSClient {
             "https://rest.variantvalidator.org/VariantValidator/variantvalidator/".to_string();
         HGVSClient::new(
             rate_limiter,
+            3,
             api_url.to_string(),
             Client::new(),
             GenomeAssembly::Hg38,
@@ -51,12 +53,14 @@ impl Debug for HGVSClient {
 impl HGVSClient {
     pub fn new(
         rate_limiter: Ratelimiter,
+        attempts: usize,
         api_url: String,
         client: Client,
         genome_assembly: GenomeAssembly,
     ) -> Self {
         HGVSClient {
             rate_limiter,
+            attempts,
             api_url,
             client,
             genome_assembly,
@@ -75,26 +79,35 @@ impl HGVSClient {
         fetch_url: String,
         unvalidated_hgvs: &str,
     ) -> Result<VariantValidatorResponse, HGVSError> {
-        if let Err(duration) = self.rate_limiter.try_wait() {
-            sleep(duration);
+        for _ in 0..self.attempts {
+            if let Err(duration) = self.rate_limiter.try_wait() {
+                sleep(duration);
+            }
+
+            let response = self
+                .client
+                .get(fetch_url.clone())
+                .header("User-Agent", "PIVOT")
+                .header("Accept", "application/json")
+                .send()
+                .map_err(|err| HGVSError::FetchRequest {
+                    hgvs: unvalidated_hgvs.to_string(),
+                    err: err.to_string(),
+                })?;
+
+            if response.status().is_success() {
+                return response.json::<VariantValidatorResponse>().map_err(|err| {
+                    HGVSError::DeserializeVariantValidatorResponseToSchema {
+                        hgvs: unvalidated_hgvs.to_string(),
+                        err: err.to_string(),
+                    }
+                });
+            }
         }
 
-        let response = self
-            .client
-            .get(fetch_url.clone())
-            .header("User-Agent", "PIVOT")
-            .header("Accept", "application/json")
-            .send()
-            .map_err(|err| HGVSError::FetchRequest {
-                hgvs: unvalidated_hgvs.to_string(),
-                err: err.to_string(),
-            })?;
-
-        response.json::<VariantValidatorResponse>().map_err(|err| {
-            HGVSError::DeserializeVariantValidatorResponseToSchema {
-                hgvs: unvalidated_hgvs.to_string(),
-                err: err.to_string(),
-            }
+        Err(HGVSError::VariantValidatorAPI {
+            hgvs: unvalidated_hgvs.to_string(),
+            attempts: self.attempts,
         })
     }
 
@@ -149,13 +162,6 @@ impl HGVSData for HGVSClient {
 
         let assemblies = variant_info.primary_assembly_loci;
 
-        /*            .ok_or_else(|| {
-            HGVSError::VariantValidatorResponseUnexpectedFormat {
-                hgvs: unvalidated_hgvs.to_string(),
-                format_issue: "VariantValidator response has empty assemblies field.".to_string(),
-            }
-        })?;*/
-
         let assembly = assemblies
             .get(&self.genome_assembly.to_string())
             .ok_or_else(|| HGVSError::GenomeAssemblyNotFound {
@@ -173,15 +179,6 @@ impl HGVSData for HGVSClient {
                 problem: "position should be parseable to u32".to_string(),
             }
         })?;
-
-        /*        let hgnc_id = variant_info
-        .gene_ids
-        .ok_or_else(|| HGVSError::VariantValidatorResponseUnexpectedFormat {
-            hgvs: unvalidated_hgvs.to_string(),
-            format_issue: "VariantValidator response has empty GeneIds field for gene variant."
-                .to_string(),
-        })?
-        .hgnc_id;*/
 
         let p_hgvs = if variant_info
             .hgvs_predicted_protein_consequence
@@ -233,36 +230,38 @@ mod tests {
     use crate::hgvs::error::HGVSError;
     use crate::hgvs::hgvs_client::HGVSClient;
     use crate::hgvs::traits::HGVSData;
-    use rstest::rstest;
+    use rstest::{fixture, rstest};
+
+    #[fixture]
+    #[once]
+    fn client() -> HGVSClient {
+        HGVSClient::default()
+    }
 
     #[rstest]
-    fn test_request_and_validate_hgvs_c() {
+    fn test_request_and_validate_hgvs_c(client: &HGVSClient) {
         let unvalidated_hgvs = "NM_001173464.1:c.2860C>T";
-        let client = HGVSClient::default();
         let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
     #[rstest]
-    fn test_request_and_validate_hgvs_n() {
+    fn test_request_and_validate_hgvs_n(client: &HGVSClient) {
         let unvalidated_hgvs = "NR_002196.1:n.601G>T";
-        let client = HGVSClient::default();
         let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
     #[rstest]
-    fn test_request_and_validate_hgvs_wrong_reference_base_err() {
+    fn test_request_and_validate_hgvs_wrong_reference_base_err(client: &HGVSClient) {
         let unvalidated_hgvs = "NM_001173464.1:c.2860G>T";
-        let client = HGVSClient::default();
         let result = client.request_and_validate_hgvs(unvalidated_hgvs);
         assert!(matches!(result, Err(HGVSError::InvalidHgvs { .. })));
     }
 
     #[rstest]
-    fn test_request_and_validate_hgvs_not_c_or_n_hgvs_err() {
+    fn test_request_and_validate_hgvs_not_c_or_n_hgvs_err(client: &HGVSClient) {
         let unvalidated_hgvs = "NC_000012.12:g.39332405G>A";
-        let client = HGVSClient::default();
         let result = client.request_and_validate_hgvs(unvalidated_hgvs);
         assert!(matches!(
             result,

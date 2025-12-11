@@ -55,6 +55,10 @@ pub enum HGVSError {
         "VariantValidator response for {hgvs} could not be deserialized to schema. Error: {err}."
     )]
     DeserializeVariantValidatorResponseToSchema { hgvs: String, err: String },
+    #[error(
+        "VariantValidatorAPI returned an error on {attempts} attempts to retrieve data about variant {hgvs}"
+    )]
+    VariantValidatorAPI { hgvs: String, attempts: usize },
     #[error("VariantValidator response for {hgvs} had an unexpected format: {format_issue}")]
     VariantValidatorResponseUnexpectedFormat { hgvs: String, format_issue: String },
     #[error("VariantValidator fetch request for {hgvs} failed. Error: {err}.")]
