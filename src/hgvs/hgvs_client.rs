@@ -5,13 +5,16 @@ use crate::hgvs::error::HGVSError;
 use crate::hgvs::hgvs_variant::HgvsVariant;
 use crate::hgvs::json_schema::{SingleVariantInfo, VariantValidatorResponse};
 use crate::hgvs::traits::HGVSData;
-use crate::hgvs::utils::{is_c_hgvs, is_n_hgvs};
+use crate::hgvs::utils::{is_c_hgvs, is_m_hgvs, is_n_hgvs};
 use ratelimit::Ratelimiter;
 use reqwest::blocking::Client;
 use serde_json::Value;
 use std::fmt::Debug;
+use std::string::ToString;
 use std::thread::sleep;
 use std::time::Duration;
+
+const ALLOWED_FLAGS: [&str; 2] = ["gene_variant", "mitochondrial"];
 
 pub struct HGVSClient {
     rate_limiter: Ratelimiter,
@@ -131,15 +134,25 @@ impl HGVSClient {
                 hgvs: unvalidated_hgvs.to_string(),
                 problems: validation_warnings,
             })
-        } else if response.flag != "gene_variant" {
-            Err(HGVSError::NonGeneVariant {
+        } else if !ALLOWED_FLAGS.contains(&response.flag.as_str()) {
+            Err(HGVSError::DisallowedFlag {
                 hgvs: unvalidated_hgvs.to_string(),
                 flag: response.flag.clone(),
+                allowed_flags: ALLOWED_FLAGS
+                    .to_vec()
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
             })
-        } else if !response.variant_info.contains_key(unvalidated_hgvs) {
-            Err(HGVSError::VariantValidatorResponseUnexpectedFormat {hgvs:unvalidated_hgvs.to_string(), format_issue: "VariantValidator response unexpectedly had no field corresponding to provided HGVS.".to_string()})
+        } else if !response.variant_info.len() == 1 {
+            Err(HGVSError::VariantValidatorResponseUnexpectedFormat {
+                hgvs: unvalidated_hgvs.to_string(),
+                format_issue:
+                    "VariantValidator response should contain information on exactly one variant."
+                        .to_string(),
+            })
         } else {
-            Ok(response.variant_info[unvalidated_hgvs].clone())
+            Ok(response.variant_info.values().next().unwrap().clone())
         }
     }
 }
@@ -147,10 +160,10 @@ impl HGVSClient {
 impl HGVSData for HGVSClient {
     fn request_and_validate_hgvs(&self, unvalidated_hgvs: &str) -> Result<HgvsVariant, HGVSError> {
         let (transcript, allele) = Self::get_transcript_and_allele(unvalidated_hgvs)?;
-        if !is_c_hgvs(allele) && !is_n_hgvs(allele) {
+        if !is_c_hgvs(allele) && !is_n_hgvs(allele) && !is_m_hgvs(allele) {
             return Err(HGVSError::HgvsFormatNotAccepted {
                 hgvs: unvalidated_hgvs.to_string(),
-                problem: "Allele did not begin with c. or n.".to_string(),
+                problem: "Allele did not begin with c. or n. or m.".to_string(),
             });
         }
 
@@ -248,6 +261,13 @@ mod tests {
     #[rstest]
     fn test_request_and_validate_hgvs_n(client: &HGVSClient) {
         let unvalidated_hgvs = "NR_002196.1:n.601G>T";
+        let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
+        assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
+    }
+
+    #[rstest]
+    fn test_request_and_validate_hgvs_m(client: &HGVSClient) {
+        let unvalidated_hgvs = "NC_012920.1:m.616T>C";
         let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }

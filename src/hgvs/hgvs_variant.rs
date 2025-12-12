@@ -1,7 +1,7 @@
 #![allow(unused)]
 use crate::hgvs::enums::{AlleleCount, ChromosomalSex};
 use crate::hgvs::error::HGVSError;
-use crate::hgvs::utils::{is_c_hgvs, is_n_hgvs};
+use crate::hgvs::utils::{is_c_hgvs, is_m_hgvs, is_n_hgvs};
 use crate::utils::is_hgnc_id;
 use phenopackets::ga4gh::vrsatile::v1::{
     Expression, GeneDescriptor, MoleculeContext, VariationDescriptor, VcfRecord,
@@ -160,6 +160,15 @@ impl HgvsVariant {
                 version: String::default(),
             };
             expressions.push(hgvs_n);
+        }
+
+        if is_m_hgvs(self.allele()) {
+            let hgvs_m = Expression {
+                syntax: "hgvs.m".to_string(),
+                value: self.transcript_hgvs().to_string(),
+                version: String::default(),
+            };
+            expressions.push(hgvs_m);
         }
 
         expressions.push(Expression {
