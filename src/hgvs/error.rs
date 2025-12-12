@@ -12,9 +12,13 @@ pub enum HGVSError {
     #[error("Hgvs string {hgvs} not accepted due to format problem: {problem}.")]
     HgvsFormatNotAccepted { hgvs: String, problem: String },
     #[error(
-        "VariantValidator response for {hgvs} did not have flag gene_variant. The flag was {flag} instead. "
+        "VariantValidator response for {hgvs} had a disallowed flag type {flag}. The allowed flag types are: {allowed_flags:?}"
     )]
-    NonGeneVariant { hgvs: String, flag: String },
+    DisallowedFlag {
+        hgvs: String,
+        flag: String,
+        allowed_flags: Vec<String>,
+    },
     #[error(
         "VariantValidator response for {hgvs} did not have genome_assembly {desired_assembly}. The following assemblies were found instead: {found_assemblies:?}"
     )]
