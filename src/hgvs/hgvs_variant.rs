@@ -134,7 +134,7 @@ impl HgvsVariant {
     pub fn create_variant_interpretation(
         &self,
         allele_count: AlleleCount,
-        sex: ChromosomalSex,
+        sex: &ChromosomalSex,
     ) -> Result<VariantInterpretation, HGVSError> {
         let gene_context = GeneDescriptor {
             value_id: self.hgnc_id().to_string(),
@@ -219,7 +219,7 @@ impl HgvsVariant {
     }
 
     fn get_allele_term(
-        chromosomal_sex: ChromosomalSex,
+        chromosomal_sex: &ChromosomalSex,
         allele_count: AlleleCount,
         is_x: bool,
         is_y: bool,
@@ -292,7 +292,7 @@ impl HgvsVariant {
             }),
             // nothing else makes sense
             _ => Err(HGVSError::ContradictoryAllelicData {
-                chromosomal_sex,
+                chromosomal_sex: chromosomal_sex.clone(),
                 allele_count,
                 is_x,
                 is_y,
@@ -386,7 +386,7 @@ mod tests {
     #[rstest]
     fn test_get_allele_term_heterozygous() {
         let allele_term =
-            HgvsVariant::get_allele_term(ChromosomalSex::XX, AlleleCount::Single, false, false)
+            HgvsVariant::get_allele_term(&ChromosomalSex::XX, AlleleCount::Single, false, false)
                 .unwrap();
         assert_eq!(allele_term.label, "heterozygous");
     }
@@ -394,7 +394,7 @@ mod tests {
     #[rstest]
     fn test_get_allele_term_heterozygous_on_x() {
         let allele_term =
-            HgvsVariant::get_allele_term(ChromosomalSex::XX, AlleleCount::Single, true, false)
+            HgvsVariant::get_allele_term(&ChromosomalSex::XX, AlleleCount::Single, true, false)
                 .unwrap();
         assert_eq!(allele_term.label, "heterozygous");
     }
@@ -402,7 +402,7 @@ mod tests {
     #[rstest]
     fn test_get_allele_term_homozygous() {
         let allele_term = HgvsVariant::get_allele_term(
-            ChromosomalSex::Unknown,
+            &ChromosomalSex::Unknown,
             AlleleCount::Double,
             false,
             false,
@@ -414,7 +414,7 @@ mod tests {
     #[rstest]
     fn test_get_allele_term_hemizygous_on_x() {
         let allele_term =
-            HgvsVariant::get_allele_term(ChromosomalSex::XYY, AlleleCount::Single, true, false)
+            HgvsVariant::get_allele_term(&ChromosomalSex::XYY, AlleleCount::Single, true, false)
                 .unwrap();
         assert_eq!(allele_term.label, "hemizygous");
     }
@@ -422,31 +422,39 @@ mod tests {
     #[rstest]
     fn test_get_allele_term_hemizygous_on_y() {
         let allele_term =
-            HgvsVariant::get_allele_term(ChromosomalSex::XXY, AlleleCount::Single, false, true)
+            HgvsVariant::get_allele_term(&ChromosomalSex::XXY, AlleleCount::Single, false, true)
                 .unwrap();
         assert_eq!(allele_term.label, "hemizygous");
     }
 
     #[rstest]
     fn test_get_allele_term_unknown_on_x() {
-        let allele_term =
-            HgvsVariant::get_allele_term(ChromosomalSex::Unknown, AlleleCount::Single, true, false)
-                .unwrap();
+        let allele_term = HgvsVariant::get_allele_term(
+            &ChromosomalSex::Unknown,
+            AlleleCount::Single,
+            true,
+            false,
+        )
+        .unwrap();
         assert_eq!(allele_term.label, "unspecified zygosity");
     }
 
     #[rstest]
     fn test_get_allele_term_unknown_on_y() {
-        let allele_term =
-            HgvsVariant::get_allele_term(ChromosomalSex::Unknown, AlleleCount::Single, false, true)
-                .unwrap();
+        let allele_term = HgvsVariant::get_allele_term(
+            &ChromosomalSex::Unknown,
+            AlleleCount::Single,
+            false,
+            true,
+        )
+        .unwrap();
         assert_eq!(allele_term.label, "unspecified zygosity");
     }
 
     #[rstest]
     fn test_get_allele_term_unknown_not_on_x_or_y() {
         let allele_term = HgvsVariant::get_allele_term(
-            ChromosomalSex::Unknown,
+            &ChromosomalSex::Unknown,
             AlleleCount::Single,
             false,
             false,
@@ -458,21 +466,21 @@ mod tests {
     #[rstest]
     fn test_get_allele_term_on_x_and_y() {
         let result =
-            HgvsVariant::get_allele_term(ChromosomalSex::Unknown, AlleleCount::Single, true, true);
+            HgvsVariant::get_allele_term(&ChromosomalSex::Unknown, AlleleCount::Single, true, true);
         assert!(result.is_err());
     }
 
     #[rstest]
     fn test_get_allele_term_not_enough_x_chromosomes() {
         let result =
-            HgvsVariant::get_allele_term(ChromosomalSex::XY, AlleleCount::Double, true, false);
+            HgvsVariant::get_allele_term(&ChromosomalSex::XY, AlleleCount::Double, true, false);
         assert!(result.is_err());
     }
 
     #[rstest]
     fn test_create_variant_interpretation_c_hgvs() {
         let vi = validated_c_hgvs()
-            .create_variant_interpretation(AlleleCount::Single, ChromosomalSex::Unknown)
+            .create_variant_interpretation(AlleleCount::Single, &ChromosomalSex::Unknown)
             .unwrap();
 
         let vi_allelic_state = vi
@@ -497,7 +505,7 @@ mod tests {
     #[rstest]
     fn test_create_variant_interpretation_n_hgvs() {
         let vi = validated_n_hgvs()
-            .create_variant_interpretation(AlleleCount::Double, ChromosomalSex::Unknown)
+            .create_variant_interpretation(AlleleCount::Double, &ChromosomalSex::Unknown)
             .unwrap();
 
         let vi_allelic_state = vi
