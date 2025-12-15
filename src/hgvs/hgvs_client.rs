@@ -245,6 +245,7 @@ mod tests {
     use crate::hgvs::traits::HGVSData;
     use rstest::{fixture, rstest};
 
+    // this forces tests to run sequentially
     #[rstest]
     fn hgvs_client_tests() {
         let client = HGVSClient::default();
