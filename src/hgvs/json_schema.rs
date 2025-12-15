@@ -58,7 +58,7 @@ pub struct DbXref {
     pub ensemblgene: Option<serde_json::Value>, // Uncertain format
     pub hgnc: String,
     pub ncbigene: String,
-    pub select: bool,
+    pub select: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
