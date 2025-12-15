@@ -3,7 +3,7 @@
 use crate::hgvs::HGVSError;
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ChromosomalSex {
     X,
     XX,
@@ -14,7 +14,7 @@ pub enum ChromosomalSex {
     Unknown,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AlleleCount {
     Single,
     Double,
