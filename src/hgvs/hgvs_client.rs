@@ -245,41 +245,48 @@ mod tests {
     use crate::hgvs::traits::HGVSData;
     use rstest::{fixture, rstest};
 
-    #[fixture]
-    #[once]
-    fn client() -> HGVSClient {
-        HGVSClient::default()
+    // this forces tests to run sequentially
+    #[rstest]
+    fn hgvs_client_tests() {
+        let client = HGVSClient::default();
+        test_request_and_validate_hgvs_c_autosomal(&client);
+        test_request_and_validate_hgvs_c_x(&client);
+        test_request_and_validate_hgvs_n(&client);
+        test_request_and_validate_hgvs_m(&client);
+        test_request_and_validate_hgvs_wrong_reference_base_err(&client);
+        test_request_and_validate_hgvs_not_c_or_n_hgvs_err(&client);
     }
 
-    #[rstest]
-    fn test_request_and_validate_hgvs_c(client: &HGVSClient) {
+    fn test_request_and_validate_hgvs_c_autosomal(client: &HGVSClient) {
         let unvalidated_hgvs = "NM_001173464.1:c.2860C>T";
         let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
-    #[rstest]
+    fn test_request_and_validate_hgvs_c_x(client: &HGVSClient) {
+        let unvalidated_hgvs = "NM_000132.4:c.3637A>T";
+        let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
+        assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
+    }
+
     fn test_request_and_validate_hgvs_n(client: &HGVSClient) {
         let unvalidated_hgvs = "NR_002196.1:n.601G>T";
         let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
-    #[rstest]
     fn test_request_and_validate_hgvs_m(client: &HGVSClient) {
         let unvalidated_hgvs = "NC_012920.1:m.616T>C";
         let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
-    #[rstest]
     fn test_request_and_validate_hgvs_wrong_reference_base_err(client: &HGVSClient) {
         let unvalidated_hgvs = "NM_001173464.1:c.2860G>T";
         let result = client.request_and_validate_hgvs(unvalidated_hgvs);
         assert!(matches!(result, Err(HGVSError::InvalidHgvs { .. })));
     }
 
-    #[rstest]
     fn test_request_and_validate_hgvs_not_c_or_n_hgvs_err(client: &HGVSClient) {
         let unvalidated_hgvs = "NC_000012.12:g.39332405G>A";
         let result = client.request_and_validate_hgvs(unvalidated_hgvs);
