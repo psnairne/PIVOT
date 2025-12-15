@@ -3,7 +3,7 @@
 use crate::hgvs::HGVSError;
 use std::fmt::Display;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ChromosomalSex {
     X,
     XX,
