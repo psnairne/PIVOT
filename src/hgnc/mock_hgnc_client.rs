@@ -9,6 +9,7 @@ use std::collections::HashMap;
 /// This struct is intended for use in unit testing. Instead of making live HTTP
 /// requests to the HGNC API, it serves data from an internal `HashMap`.
 /// This allows for deterministic testing of components that rely on `HGNCData`.
+#[derive(Debug)]
 pub struct MockHGNCClient {
     docs: HashMap<String, GeneDoc>,
 }
