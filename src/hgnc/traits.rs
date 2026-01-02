@@ -1,8 +1,9 @@
 use crate::hgnc::enums::GeneQuery;
 use crate::hgnc::error::HGNCError;
 use crate::hgnc::json_schema::GeneDoc;
+use std::fmt::Debug;
 
-pub trait HGNCData {
+pub trait HGNCData: Debug + Default {
     fn request_gene_data(&self, query: GeneQuery) -> Result<GeneDoc, HGNCError>;
     fn request_hgnc_id(&self, query: GeneQuery) -> Result<String, HGNCError> {
         let doc = self.request_gene_data(query)?;
