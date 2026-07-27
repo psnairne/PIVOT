@@ -24,14 +24,6 @@
 //!
 //! A mocked implementation of the HGVSData trait for tests and CI.
 //!
-//! # [`AlleleCount`]
-//!
-//! An enum with two variants Single and Double. This is used for create a VariantInterpretation from a HgvsVariant object.
-//!
-//! # [`ChromosomalSex`]
-//!
-//! An enum with the variants X, XX, XXX, XY, XXY, XYY, Unknown. This is used for create a VariantInterpretation from a HgvsVariant object. Note: the chromosomal sex is relevant when determining whether a mutation on the X or Y chromosome is hemizygous or heterozygous.
-//!
 //! # [`HGVSError`]
 //!
 //! An enum for errors returned by the API.
@@ -66,22 +58,8 @@
 //! let hgvs_variant = client.request_and_validate_hgvs("NR_002196.1:n.601G>T").unwrap();
 //! ```
 //!
-//! ## Creating VariantInterpretations from HgvsVariant objects
-//!
-//! ```rust
-//! use pivotal::hgvs::{AlleleCount, ChromosomalSex, HGVSClient, HGVSData};
-//!
-//! let client = HGVSClient::default();
-//! let hgvs_variant = client.request_and_validate_hgvs("NM_001173464.1:c.2860C>T").unwrap();
-//! let vi = hgvs_variant.create_variant_interpretation(AlleleCount::Single, &ChromosomalSex::XX);
-//!
-//! let vi_allelic_state = vi.unwrap().variation_descriptor.unwrap().allelic_state.unwrap().label;
-//! assert_eq!("heterozygous", vi_allelic_state);
-//! ```
 
 pub use cached_hgvs_client::CachedHGVSClient;
-pub use enums::AlleleCount;
-pub use enums::ChromosomalSex;
 pub use error::HGVSError;
 pub use hgvs_client::HGVSClient;
 pub use hgvs_variant::HgvsVariant;

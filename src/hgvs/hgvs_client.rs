@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use crate::hgvs::enums::GenomeAssembly;
 use crate::hgvs::error::HGVSError;
 use crate::hgvs::hgvs_variant::HgvsVariant;
@@ -8,7 +6,7 @@ use crate::hgvs::traits::HGVSData;
 use crate::hgvs::utils::{is_c_hgvs, is_m_hgvs, is_n_hgvs};
 use ratelimit::Ratelimiter;
 use reqwest::blocking::Client;
-use serde_json::Value;
+use serde_json::{Value, from_value};
 use std::fmt::Debug;
 use std::string::ToString;
 use std::sync::OnceLock;
@@ -96,12 +94,9 @@ impl HGVSClient {
             if let Ok(response) = response
                 && response.status().is_success()
             {
-                return response.json::<VariantValidatorResponse>().map_err(|err| {
-                    HGVSError::DeserializeVariantValidatorResponseToSchema {
-                        hgvs: unvalidated_hgvs.to_string(),
-                        err: err.to_string(),
-                    }
-                });
+                let json_value = response.json::<Value>()?;
+                let vv_response = from_value(json_value)?;
+                return Ok(vv_response);
             } else {
                 sleep(Duration::from_secs(3));
             }

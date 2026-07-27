@@ -1,5 +1,4 @@
 use crate::caching::error::CacherError;
-use crate::hgvs::enums::{AlleleCount, ChromosomalSex};
 use redb::{CommitError, DatabaseError, StorageError, TableError, TransactionError};
 use thiserror::Error;
 
@@ -32,15 +31,6 @@ pub enum HGVSError {
         found_assemblies: Vec<String>,
     },
     #[error(
-        "The provided {id_type} {inputted_gene} does not match with the actual gene {actual_gene} of HGVS variant {hgvs}"
-    )]
-    MismatchingGeneData {
-        id_type: String,
-        inputted_gene: String,
-        hgvs: String,
-        actual_gene: String,
-    },
-    #[error(
         "VariantValidator response for {hgvs} has element {element} with following problem: {problem}"
     )]
     InvalidVariantValidatorResponseElement {
@@ -48,21 +38,6 @@ pub enum HGVSError {
         element: String,
         problem: String,
     },
-    #[error(
-        "The following data for a HGVS was contradictory: Chromosomal Sex: {chromosomal_sex:?}, AlleleCount: {allele_count:?}, is_x: {is_x}, is_y: {is_y}"
-    )]
-    ContradictoryAllelicData {
-        chromosomal_sex: ChromosomalSex,
-        allele_count: AlleleCount,
-        is_x: bool,
-        is_y: bool,
-    },
-    #[error("An allele count of {found} was found. Only allele counts of 1 or 2 are allowed.")]
-    InvalidAlleleCount { found: u8 },
-    #[error(
-        "VariantValidator response for {hgvs} could not be deserialized to schema. Error: {err}."
-    )]
-    DeserializeVariantValidatorResponseToSchema { hgvs: String, err: String },
     #[error(
         "VariantValidatorAPI returned an error on {attempts} attempts to retrieve data about variant {hgvs}"
     )]
@@ -83,4 +58,8 @@ pub enum HGVSError {
     CacherError(#[from] CacherError),
     #[error("Something went wrong when using Mutex: {0}")]
     MutexError(String),
+    #[error(transparent)]
+    SerdeError(#[from] serde_json::Error),
+    #[error(transparent)]
+    ReqwestError(#[from] reqwest::Error),
 }

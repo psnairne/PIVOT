@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use crate::hgvs::error::HGVSError;
 use crate::hgvs::hgvs_variant::HgvsVariant;
 use std::fmt::Debug;
