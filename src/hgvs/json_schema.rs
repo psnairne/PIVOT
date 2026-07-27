@@ -23,7 +23,7 @@ pub struct SingleVariantInfo {
     pub hgvs_predicted_protein_consequence: PredictedProteinConsequence,
     pub hgvs_refseqgene_variant: String,
     pub hgvs_transcript_variant: String,
-    pub lovd_corrections: Option<HashMap<String, u32>>,
+    pub lovd_corrections: Option<HashMap<String, f64>>,
     pub lovd_messages: Option<LovdMessages>,
     pub primary_assembly_loci: HashMap<String, PrimaryAssemblyLoci>,
     pub reference_sequence_records: Option<serde_json::Value>, // the format of this seems to change
